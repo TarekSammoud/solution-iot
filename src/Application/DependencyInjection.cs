@@ -21,10 +21,12 @@ public static class DependencyInjection
         services.AddSingleton<LocalisationMapper>();
         services.AddSingleton<SystemePartenaireMapper>();
         services.AddSingleton<UniteMesureMapper>();
+        services.AddSingleton<UserMapper>();
 
         services.AddScoped<ILocalisationService, LocalisationService>();
         services.AddScoped<ISystemePartenaireService, SystemePartenaireService>();
         services.AddScoped<IUniteMesureService, UniteMesureService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

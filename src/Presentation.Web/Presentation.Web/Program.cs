@@ -32,6 +32,11 @@ builder.Services.AddHttpClient<UniteMesureApiService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
 });
 
+builder.Services.AddHttpClient<UserApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
