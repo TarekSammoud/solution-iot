@@ -1,0 +1,98 @@
+@page "/unitemesure/create"
+@using Application.DTOs
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject UniteMesureApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Créer une unité</PageTitle>
+
+<h3>Créer une unité de mesure</h3>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Erreur !</strong> @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+    </div>
+}
+
+<EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label for="symbole" class="form-label">Symbole <span class="text-danger">*</span></label>
+        <InputText id="symbole" @bind-Value="model.Symbole" class="form-control" placeholder="Ex: °C, %, ppm" />
+        <ValidationMessage For="@(() => model.Symbole)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+        <InputText id="nom" @bind-Value="model.Nom" class="form-control" placeholder="Ex: Degré Celsius, Pourcentage" />
+        <ValidationMessage For="@(() => model.Nom)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="type" class="form-label">Type de sonde <span class="text-danger">*</span></label>
+        <InputSelect id="type" @bind-Value="model.TypeSonde" class="form-select">
+            @foreach (var t in Enum.GetValues<TypeSonde>())
+            {
+                <option value="@t">@t</option>
+            }
+        </InputSelect>
+    </div>
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span class="oi oi-check me-2" aria-hidden="true"></span>
+            }
+            Créer
+        </button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isSaving">
+            <span class="oi oi-x me-2" aria-hidden="true"></span> Annuler
+        </button>
+    </div>
+</EditForm>
+
+@code {
+    private CreateUniteMesureDto model = new() { TypeSonde = TypeSonde.Temperature };
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await ApiService.CreateAsync(model);
+            Navigation.NavigateTo("/unitemesure");
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = "Une erreur inattendue s'est produite.";
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/unitemesure");
+    }
+}

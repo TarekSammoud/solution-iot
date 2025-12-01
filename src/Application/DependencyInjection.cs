@@ -18,13 +18,13 @@ public static class DependencyInjection
     /// <returns>La collection de services pour permettre le chaînage.</returns>
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
-        // Enregistrer le mapper comme Singleton (pas d'état, thread-safe, code généré)
         services.AddSingleton<LocalisationMapper>();
         services.AddSingleton<SystemePartenaireMapper>();
+        services.AddSingleton<UniteMesureMapper>();
 
-        // Enregistrer les services comme Scoped (une instance par requête HTTP)
         services.AddScoped<ILocalisationService, LocalisationService>();
         services.AddScoped<ISystemePartenaireService, SystemePartenaireService>();
+        services.AddScoped<IUniteMesureService, UniteMesureService>();
 
         return services;
     }

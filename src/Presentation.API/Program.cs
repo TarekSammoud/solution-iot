@@ -18,6 +18,7 @@ builder.Services.AddScoped<ILocalisationRepository, LocalisationRepository>();
 builder.Services.AddScoped<IActionneurRepository, ActionneurRepository>();
 builder.Services.AddScoped<IEtatActionneurRepository, EtatActionneurRepository>();
 builder.Services.AddScoped<ISystemePartenaireRepository, SystemePartenaireRepository>();
+builder.Services.AddScoped<IUniteMesureRepository, UniteMesureRepository>();
 
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();
