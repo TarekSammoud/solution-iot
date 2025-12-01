@@ -1,0 +1,147 @@
+@page "/localisations/edit/{id:guid}"
+@using Application.DTOs
+@using Presentation.Web.Services
+@inject LocalisationApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Modifier Localisation</PageTitle>
+
+<h3>Modifier Localisation</h3>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p>Chargement de la localisation...</p>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Erreur !</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
+            <InputText id="nom" @bind-Value="model.Nom" class="form-control" placeholder="Ex: Salon, Bureau, Garage..." />
+            <ValidationMessage For="@(() => model.Nom)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <InputTextArea id="description" @bind-Value="model.Description" class="form-control" rows="3" placeholder="Description détaillée de la localisation (optionnel)" />
+            <ValidationMessage For="@(() => model.Description)" class="text-danger" />
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                }
+                else
+                {
+                    <span class="oi oi-check me-2" aria-hidden="true"></span>
+                }
+                Enregistrer
+            </button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isSaving">
+                <span class="oi oi-x me-2" aria-hidden="true"></span> Annuler
+            </button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    /// <summary>
+    /// Paramètre de route : identifiant de la localisation à modifier.
+    /// </summary>
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private UpdateLocalisationDto model = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    /// <summary>
+    /// Méthode appelée lors de l'initialisation du composant.
+    /// Charge la localisation à modifier depuis l'API.
+    /// </summary>
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var localisation = await ApiService.GetByIdAsync(Id);
+
+            if (localisation == null)
+            {
+                // Localisation non trouvée, retour à la liste
+                Navigation.NavigateTo("/localisations");
+                return;
+            }
+
+            // Mapper la localisation vers le DTO de mise à jour
+            model.Id = Id;
+            model.Nom = localisation.Nom;
+            model.Description = localisation.Description;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement de la localisation : {ex.Message}";
+            Console.WriteLine($"Erreur lors du chargement: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// Gère la soumission valide du formulaire de modification.
+    /// Appelle l'API pour mettre à jour la localisation et redirige vers la liste.
+    /// </summary>
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await ApiService.UpdateAsync(model);
+            Navigation.NavigateTo("/localisations");
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Erreur lors de la modification de la localisation : {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+            Console.WriteLine($"Erreur lors de la modification: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    /// <summary>
+    /// Annule la modification et retourne à la liste des localisations.
+    /// </summary>
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/localisations");
+    }
+}

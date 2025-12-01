@@ -1,0 +1,108 @@
+using Domain.Entities;
+using Domain.Enums;
+using Domain.Interfaces;
+using Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
+
+namespace Infrastructure.Repositories;
+
+/// <summary>
+/// Implémentation du repository pour l'entité Releve.
+/// Gère les opérations CRUD et les requêtes spécifiques pour les relevés de mesure.
+/// Utilise eager loading pour charger la Sonde et trie par DateHeure descendant.
+/// </summary>
+public class ReleveRepository : IReleveRepository
+{
+    private readonly AppDbContext _context;
+
+    public ReleveRepository(AppDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<Releve?> GetByIdAsync(Guid id)
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    public async Task<IEnumerable<Releve>> GetAllAsync()
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .OrderByDescending(r => r.DateHeure)
+            .ToListAsync();
+    }
+
+    public async Task<Releve> AddAsync(Releve releve)
+    {
+        // Génère un nouvel Id si non fourni
+        if (releve.Id == Guid.Empty)
+        {
+            releve.Id = Guid.NewGuid();
+        }
+
+        await _context.Releves.AddAsync(releve);
+        await _context.SaveChangesAsync();
+        return releve;
+    }
+
+    public async Task UpdateAsync(Releve releve)
+    {
+        _context.Releves.Update(releve);
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task DeleteAsync(Guid id)
+    {
+        var releve = await _context.Releves.FindAsync(id);
+        if (releve != null)
+        {
+            _context.Releves.Remove(releve);
+            await _context.SaveChangesAsync();
+        }
+    }
+
+    public async Task<IEnumerable<Releve>> GetBySondeAsync(Guid sondeId)
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .Where(r => r.SondeId == sondeId)
+            .OrderByDescending(r => r.DateHeure)
+            .ToListAsync();
+    }
+
+    public async Task<IEnumerable<Releve>> GetBySondeDateRangeAsync(Guid sondeId, DateTime dateDebut, DateTime dateFin)
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .Where(r => r.SondeId == sondeId && r.DateHeure >= dateDebut && r.DateHeure <= dateFin)
+            .OrderByDescending(r => r.DateHeure)
+            .ToListAsync();
+    }
+
+    public async Task<Releve?> GetLastBySondeAsync(Guid sondeId)
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .Where(r => r.SondeId == sondeId)
+            .OrderByDescending(r => r.DateHeure)
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<IEnumerable<Releve>> GetByTypeAsync(TypeReleve typeReleve)
+    {
+        return await _context.Releves
+            .Include(r => r.Sonde)
+            .Where(r => r.TypeReleve == typeReleve)
+            .OrderByDescending(r => r.DateHeure)
+            .ToListAsync();
+    }
+
+    public async Task<int> CountBySondeAsync(Guid sondeId)
+    {
+        return await _context.Releves
+            .CountAsync(r => r.SondeId == sondeId);
+    }
+}

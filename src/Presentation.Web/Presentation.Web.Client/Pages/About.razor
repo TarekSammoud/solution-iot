@@ -1,0 +1,46 @@
+@page "/about"
+@rendermode InteractiveWebAssembly
+
+<PageTitle>À propos</PageTitle>
+
+<h1>À propos de la Plateforme IoT</h1>
+
+<div class="mt-4">
+    <h3>Description</h3>
+    <p>
+        Cette plateforme de gestion d'objets connectés IoT a été développée avec les technologies Microsoft .NET 9.0
+        et suit les principes de Clean Architecture pour assurer une séparation claire des responsabilités.
+    </p>
+
+    <h3 class="mt-4">Architecture</h3>
+    <p>Le projet est organisé en plusieurs couches :</p>
+    <ul>
+        <li><strong>Domain</strong> : Contient les entités métier, enums et interfaces des repositories</li>
+        <li><strong>Application</strong> : Contient les DTOs, services et logique métier</li>
+        <li><strong>Infrastructure</strong> : Implémentation des repositories et accès aux données (Entity Framework Core avec SQLite)</li>
+        <li><strong>Presentation.API</strong> : API REST avec contrôleurs et documentation Swagger</li>
+        <li><strong>Presentation.Web</strong> : Interface utilisateur Blazor (Server + WebAssembly)</li>
+    </ul>
+
+    <h3 class="mt-4">Technologies utilisées</h3>
+    <ul>
+        <li>.NET 9.0</li>
+        <li>Blazor Server & WebAssembly</li>
+        <li>Entity Framework Core 9.0</li>
+        <li>SQLite</li>
+        <li>ASP.NET Core Web API</li>
+        <li>Swagger/OpenAPI</li>
+    </ul>
+
+    <h3 class="mt-4">Fonctionnalités</h3>
+    <ul>
+        <li>CRUD complet pour les sondes IoT</li>
+        <li>Gestion des relevés de mesures</li>
+        <li>Tableau de bord avec statistiques</li>
+        <li>Validation des données</li>
+        <li>Interface responsive</li>
+    </ul>
+
+    <h3 class="mt-4">Contact</h3>
+    <p>Pour plus d'informations, consultez la documentation ou contactez l'équipe de développement.</p>
+</div>
