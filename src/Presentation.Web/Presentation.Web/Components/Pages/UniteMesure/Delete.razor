@@ -1,0 +1,145 @@
+@page "/unitemesure/delete/{id:guid}"
+@using Application.DTOs
+@using Presentation.Web.Services
+@inject UniteMesureApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Supprimer une unité</PageTitle>
+
+<h3>Supprimer une unité de mesure</h3>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+        <p>Chargement de l'unité...</p>
+    </div>
+}
+else if (item == null)
+{
+    <div class="alert alert-warning" role="alert">
+        L'unité demandée n'existe pas ou a déjà été supprimée.
+    </div>
+    <button class="btn btn-secondary" @onclick="Cancel">Retour à la liste</button>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Erreur !</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="alert alert-warning" role="alert">
+        <h4 class="alert-heading">
+            <span class="oi oi-warning me-2" aria-hidden="true"></span>
+            Attention !
+        </h4>
+        <p>Êtes-vous sûr de vouloir supprimer cette unité ?</p>
+        <p class="mb-0"><strong>Cette action est irréversible.</strong></p>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <h5>Détails de l'unité</h5>
+        </div>
+        <div class="card-body">
+            <dl class="row">
+                <dt class="col-sm-3">Symbole :</dt>
+                <dd class="col-sm-9">@item.Symbole</dd>
+
+                <dt class="col-sm-3">Nom :</dt>
+                <dd class="col-sm-9">@item.Nom</dd>
+
+                <dt class="col-sm-3">Type :</dt>
+                <dd class="col-sm-9">@item.TypeSonde</dd>
+
+                <dt class="col-sm-3">Date de création :</dt>
+                <dd class="col-sm-9">@item.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
+            </dl>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <button class="btn btn-danger" @onclick="ConfirmDelete" disabled="@isDeleting">
+            @if (isDeleting)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span class="oi oi-trash me-2" aria-hidden="true"></span>
+            }
+            Supprimer définitivement
+        </button>
+        <button class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isDeleting">
+            <span class="oi oi-x me-2" aria-hidden="true"></span> Annuler
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private UniteMesureDto? item;
+    private bool isLoading = true;
+    private bool isDeleting = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            item = await ApiService.GetByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ConfirmDelete()
+    {
+        isDeleting = true;
+        errorMessage = null;
+        try
+        {
+            var success = await ApiService.DeleteAsync(Id);
+            if (success)
+            {
+                Navigation.NavigateTo("/unitemesure");
+            }
+            else
+            {
+                errorMessage = "La suppression a échoué. L'unité n'existe peut-être plus.";
+            }
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = ex.Message;
+        }
+        catch (Exception)
+        {
+            errorMessage = "Une erreur inattendue s'est produite.";
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/unitemesure");
+    }
+}
