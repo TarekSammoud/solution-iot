@@ -1,5 +1,6 @@
 @page "/systeme-partenaires"
 @using Application.DTOs
+@using Microsoft.AspNetCore.WebUtilities
 @using Presentation.Web.Services
 @inject SystemePartenaireApiService ApiService
 @inject NavigationManager Navigation
@@ -24,6 +25,14 @@
     }
 </div>
 
+@if (!string.IsNullOrEmpty(successMessage))
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>Succès !</strong> @successMessage
+        <button type="button" class="btn-close" @onclick="() => successMessage = null" aria-label="Close"></button>
+    </div>
+}
+
 @if (isLoading)
 {
     <div class="text-center">
@@ -46,9 +55,7 @@ else
             <tr>
                 <th>Nom</th>
                 <th>URL de base</th>
-                <th>Modes</th>
-                <th>Actif</th>
-                <th>Date de création</th>
+                <th>Mode(s) actif(s)</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -59,31 +66,7 @@ else
                 <tr>
                     <td>@systeme.Nom</td>
                     <td>@systeme.UrlBase</td>
-                    <td>
-                        @if (systeme.EstAppelant)
-                        {
-                            <span class="badge bg-primary me-1">Appelant</span>
-                        }
-                        @if (systeme.EstAppele)
-                        {
-                            <span class="badge bg-success">Appelé</span>
-                        }
-                        @if (!systeme.EstAppelant && !systeme.EstAppele)
-                        {
-                            <span class="badge bg-secondary">Aucun</span>
-                        }
-                    </td>
-                    <td>
-                        @if (systeme.EstActif)
-                        {
-                            <span class="badge bg-success">Oui</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-danger">Non</span>
-                        }
-                    </td>
-                    <td>@systeme.DateCreation.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@GetModesText(systeme)</td>
                     <td>
                         <a href="/systeme-partenaires/details/@id" class="btn btn-sm btn-primary">
                             <span class="oi oi-eye" aria-hidden="true"></span> Details
@@ -104,12 +87,14 @@ else
 @code {
     private List<SystemePartenaireDto> systemes = new();
     private bool isLoading = true;
+    private string? successMessage;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
             systemes = await ApiService.GetAllAsync();
+            ParseSuccessQuery();
         }
         catch (Exception ex)
         {
@@ -140,5 +125,33 @@ else
     private void NavigateToDelete(Guid id)
     {
         Navigation.NavigateTo($"/systeme-partenaires/delete/{id}");
+    }
+
+    private string GetModesText(SystemePartenaireDto s)
+    {
+        var appelant = !string.IsNullOrWhiteSpace(s.UsernameAppel);
+        var appele = !string.IsNullOrWhiteSpace(s.UsernameAcces);
+        if (appelant && appele) return "Appelant + Appelé";
+        if (appelant) return "Appelant";
+        if (appele) return "Appelé";
+        return "Aucun";
+    }
+
+    private void ParseSuccessQuery()
+    {
+        var uri = new Uri(Navigation.Uri);
+        var query = QueryHelpers.ParseQuery(uri.Query);
+        if (query.TryGetValue("created", out var c) && c == "1")
+        {
+            successMessage = "Le système partenaire a été créé avec succès.";
+        }
+        else if (query.TryGetValue("updated", out var u) && u == "1")
+        {
+            successMessage = "Le système partenaire a été modifié avec succès.";
+        }
+        else if (query.TryGetValue("deleted", out var d) && d == "1")
+        {
+            successMessage = "Le système partenaire a été supprimé avec succès.";
+        }
     }
 }

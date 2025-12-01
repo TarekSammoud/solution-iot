@@ -49,42 +49,54 @@ else
         </button>
     </div>
 
-    <div class="card">
-        <div class="card-header">
-            <h5>Informations générales</h5>
+        <div class="card">
+            <div class="card-header">
+                <h5>Informations générales</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nom</dt>
+                    <dd class="col-sm-9">@systeme.Nom</dd>
+
+                    <dt class="col-sm-3">URL de base</dt>
+                    <dd class="col-sm-9">@systeme.UrlBase</dd>
+
+                    <dt class="col-sm-3">UsernameAppel</dt>
+                    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(systeme.UsernameAppel) ? systeme.UsernameAppel : "—")</dd>
+
+                    <dt class="col-sm-3">PasswordChiffre</dt>
+                    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(systeme.PasswordChiffre) ? "****" : "—")</dd>
+
+                    <dt class="col-sm-3">UsernameAcces</dt>
+                    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(systeme.UsernameAcces) ? systeme.UsernameAcces : "—")</dd>
+
+                    <dt class="col-sm-3">PasswordHashAcces</dt>
+                    <dd class="col-sm-9">@(!string.IsNullOrWhiteSpace(systeme.PasswordHashAcces) ? "****" : "—")</dd>
+
+                    <dt class="col-sm-3">Modes</dt>
+                    <dd class="col-sm-9">
+                        @if (systeme.EstAppelant)
+                        {
+                            <span class="badge bg-primary me-1">Appelant</span>
+                        }
+                        @if (systeme.EstAppele)
+                        {
+                            <span class="badge bg-success">Appelé</span>
+                        }
+                        @if (!systeme.EstAppelant && !systeme.EstAppele)
+                        {
+                            <span class="badge bg-secondary">Aucun</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-3">Actif</dt>
+                    <dd class="col-sm-9">@(systeme.EstActif ? "Oui" : "Non")</dd>
+
+                    <dt class="col-sm-3">Date de création</dt>
+                    <dd class="col-sm-9">@systeme.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
+                </dl>
+            </div>
         </div>
-        <div class="card-body">
-            <dl class="row">
-                <dt class="col-sm-3">Nom</dt>
-                <dd class="col-sm-9">@systeme.Nom</dd>
-
-                <dt class="col-sm-3">URL de base</dt>
-                <dd class="col-sm-9">@systeme.UrlBase</dd>
-
-                <dt class="col-sm-3">Modes</dt>
-                <dd class="col-sm-9">
-                    @if (systeme.EstAppelant)
-                    {
-                        <span class="badge bg-primary me-1">Appelant</span>
-                    }
-                    @if (systeme.EstAppele)
-                    {
-                        <span class="badge bg-success">Appelé</span>
-                    }
-                    @if (!systeme.EstAppelant && !systeme.EstAppele)
-                    {
-                        <span class="badge bg-secondary">Aucun</span>
-                    }
-                </dd>
-
-                <dt class="col-sm-3">Actif</dt>
-                <dd class="col-sm-9">@(systeme.EstActif ? "Oui" : "Non")</dd>
-
-                <dt class="col-sm-3">Date de création</dt>
-                <dd class="col-sm-9">@systeme.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
-            </dl>
-        </div>
-    </div>
 }
 
 @code {

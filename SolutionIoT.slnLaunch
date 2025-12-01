@@ -1,0 +1,19 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "src\\Presentation.API\\Presentation.API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation.Web\\Presentation.Web\\Presentation.Web.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "src\\Presentation.Web\\Presentation.Web.Client\\Presentation.Web.Client.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

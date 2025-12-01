@@ -45,19 +45,31 @@ else
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Appels sortants (nous → partenaire)</label>
-            <div class="form-check form-switch mb-2">
-                <InputCheckbox id="estappele" class="form-check-input" @bind-Value="model.EstAppele" />
-                <label class="form-check-label" for="estappele">Peut être appelé</label>
+            <label class="form-label">Options</label>
+            <div class="form-check form-check-inline">
+                <InputCheckbox id="estAppelant" @bind-Value="model.EstAppelant" class="form-check-input" />
+                <label for="estAppelant" class="form-check-label">Est Appelant</label>
             </div>
+            <div class="form-check form-check-inline">
+                <InputCheckbox id="estAppele" @bind-Value="model.EstAppele" class="form-check-input" />
+                <label for="estAppele" class="form-check-label">Est Appelé</label>
+            </div>
+            <div class="form-check form-check-inline">
+                <InputCheckbox id="estActif" @bind-Value="model.EstActif" class="form-check-input" />
+                <label for="estActif" class="form-check-label">Actif</label>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Configuration Appelant</label>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="usernameAppel" class="form-label">Username appel</label>
+                    <label for="usernameAppel" class="form-label">UsernameAppel</label>
                     <InputText id="usernameAppel" @bind-Value="model.UsernameAppel" class="form-control" placeholder="Nom d'utilisateur pour appel" />
                     <ValidationMessage For="@(() => model.UsernameAppel)" class="text-danger" />
                 </div>
                 <div class="col-md-6">
-                    <label for="passwordChiffre" class="form-label">Password (chiffré)</label>
+                    <label for="passwordChiffre" class="form-label">PasswordChiffre</label>
                     <InputText id="passwordChiffre" @bind-Value="model.PasswordChiffre" class="form-control" type="password" placeholder="Mot de passe chiffré" />
                     <ValidationMessage For="@(() => model.PasswordChiffre)" class="text-danger" />
                 </div>
@@ -65,29 +77,22 @@ else
         </div>
 
         <div class="mb-3">
-            <label class="form-label">Appels entrants (partenaire → nous)</label>
-            <div class="form-check form-switch mb-2">
-                <InputCheckbox id="estappelant" class="form-check-input" @bind-Value="model.EstAppelant" />
-                <label class="form-check-label" for="estappelant">Peut nous appeler</label>
-            </div>
+            <label class="form-label">Configuration Appelé</label>
             <div class="row g-3">
                 <div class="col-md-6">
-                    <label for="usernameAcces" class="form-label">Username accès</label>
+                    <label for="usernameAcces" class="form-label">UsernameAcces</label>
                     <InputText id="usernameAcces" @bind-Value="model.UsernameAcces" class="form-control" placeholder="Nom d'utilisateur d'accès" />
                     <ValidationMessage For="@(() => model.UsernameAcces)" class="text-danger" />
                 </div>
                 <div class="col-md-6">
-                    <label for="passwordHashAcces" class="form-label">Password hash accès</label>
+                    <label for="passwordHashAcces" class="form-label">PasswordHashAcces</label>
                     <InputText id="passwordHashAcces" @bind-Value="model.PasswordHashAcces" class="form-control" placeholder="Hash du mot de passe" />
                     <ValidationMessage For="@(() => model.PasswordHashAcces)" class="text-danger" />
                 </div>
             </div>
         </div>
 
-        <div class="form-check form-switch mb-4">
-            <InputCheckbox id="estActif" class="form-check-input" @bind-Value="model.EstActif" />
-            <label class="form-check-label" for="estActif">Actif</label>
-        </div>
+        
 
         <div class="mt-4">
             <button type="submit" class="btn btn-primary" disabled="@isSaving">
@@ -113,6 +118,8 @@ else
     public Guid Id { get; set; }
 
     private UpdateSystemePartenaireDto model = new();
+    private string? originalPasswordChiffre;
+    private string? originalPasswordHashAcces;
     private bool isLoading = true;
     private bool isSaving = false;
     private string? errorMessage;
@@ -133,9 +140,11 @@ else
             model.Nom = systeme.Nom;
             model.UrlBase = systeme.UrlBase;
             model.UsernameAppel = systeme.UsernameAppel;
-            model.PasswordChiffre = systeme.PasswordChiffre;
+            originalPasswordChiffre = systeme.PasswordChiffre;
+            model.PasswordChiffre = string.Empty;
             model.UsernameAcces = systeme.UsernameAcces;
-            model.PasswordHashAcces = systeme.PasswordHashAcces;
+            originalPasswordHashAcces = systeme.PasswordHashAcces;
+            model.PasswordHashAcces = string.Empty;
             model.EstAppelant = systeme.EstAppelant;
             model.EstAppele = systeme.EstAppele;
             model.EstActif = systeme.EstActif;
@@ -159,8 +168,10 @@ else
 
         try
         {
+            model.PasswordChiffre = string.IsNullOrWhiteSpace(model.PasswordChiffre) ? originalPasswordChiffre : model.PasswordChiffre;
+            model.PasswordHashAcces = string.IsNullOrWhiteSpace(model.PasswordHashAcces) ? originalPasswordHashAcces : model.PasswordHashAcces;
             await ApiService.UpdateAsync(model);
-            Navigation.NavigateTo("/systeme-partenaires");
+            Navigation.NavigateTo("/systeme-partenaires?updated=1");
         }
         catch (HttpRequestException ex)
         {
