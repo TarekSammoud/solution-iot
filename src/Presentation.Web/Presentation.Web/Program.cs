@@ -1,3 +1,4 @@
+using Application.Services;
 using Presentation.Web.Components;
 using Presentation.Web.Services;
 
@@ -16,6 +17,11 @@ builder.Services.AddScoped(sp => new HttpClient
 
 // Configuration du HttpClient pour LocalisationApiService
 builder.Services.AddHttpClient<LocalisationApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
+});
+// Configuration du HttpClient pour SystemePartenaireApiService
+builder.Services.AddHttpClient<SystemePartenaireApiService>(client =>
 {
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
 });
