@@ -20,9 +20,11 @@ public static class DependencyInjection
     {
         // Enregistrer le mapper comme Singleton (pas d'état, thread-safe, code généré)
         services.AddSingleton<LocalisationMapper>();
+        services.AddSingleton<UserMapper>();
 
         // Enregistrer les services comme Scoped (une instance par requête HTTP)
         services.AddScoped<ILocalisationService, LocalisationService>();
+        services.AddScoped<IUserService, UserService>();
 
         return services;
     }

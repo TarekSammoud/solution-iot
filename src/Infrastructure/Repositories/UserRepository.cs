@@ -89,9 +89,10 @@ public class UserRepository : IUserRepository
     /// </summary>
     public async Task UpdateAsync(User user)
     {
-        _context.Users.Update(user);
+        // The user is already tracked because it was loaded in the service.
         await _context.SaveChangesAsync();
     }
+
 
     /// <summary>
     /// Supprime un utilisateur par son identifiant.

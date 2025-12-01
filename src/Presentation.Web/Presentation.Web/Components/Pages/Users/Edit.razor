@@ -1,0 +1,123 @@
+@page "/utilisateurs/edit/{id:guid}"
+@using Application.DTOs.User
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject UserApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Modifier Utilisateur</PageTitle>
+
+<h3>Modifier Utilisateur</h3>
+
+@if (isLoading)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status"></div>
+        <p>Chargement de l'utilisateur...</p>
+    </div>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <strong>Erreur !</strong> @errorMessage
+            <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+        </div>
+    }
+
+    <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary class="text-danger" />
+
+        <div class="mb-3">
+            <label class="form-label">Username <span class="text-danger">*</span></label>
+            <InputText @bind-Value="model.Username" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Email <span class="text-danger">*</span></label>
+            <InputText @bind-Value="model.Email" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Mot de passe <span class="text-danger">*</span></label>
+            <InputText @bind-Value="model.PasswordHash" type="password" class="form-control" placeholder="***********" />
+            <ValidationMessage For="@(() => model.PasswordHash)" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Rôle <span class="text-danger">*</span></label>
+            <InputSelect @bind-Value="model.Role" class="form-select">
+                @foreach (var value in Enum.GetValues(typeof(RoleUtilisateur)))
+                {
+                    <option value="@value">@value</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox @bind-Value="model.EstActif" class="form-check-input" id="isActive" />
+            <label for="isActive" class="form-check-label">Compte actif</label>
+        </div>
+
+        <div class="mt-4">
+            <button type="submit" class="btn btn-primary" disabled="@isSaving">
+                @if (isSaving)
+                {
+                    <span class="spinner-border spinner-border-sm me-2"></span>
+                }
+                Enregistrer
+            </button>
+            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isSaving">Annuler</button>
+        </div>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private UpdateUserDto model = new();
+    private bool isLoading = true;
+    private bool isSaving = false;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var user = await ApiService.GetByIdAsync(Id);
+            if (user == null) Navigation.NavigateTo("/utilisateurs");
+
+            model.Id = Id;
+            model.Username = user.Username;
+            model.Email = user.Email;
+            model.Role = user.Role;
+            model.EstActif = user.EstActif;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur : {ex.Message}";
+        }
+        finally { isLoading = false; }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await ApiService.UpdateAsync(model);
+            Navigation.NavigateTo("/utilisateurs");
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de la mise à jour : {ex.Message}";
+        }
+        finally { isSaving = false; }
+    }
+
+    private void Cancel() => Navigation.NavigateTo("/utilisateurs");
+}
