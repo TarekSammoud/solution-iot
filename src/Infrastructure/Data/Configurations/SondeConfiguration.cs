@@ -20,7 +20,7 @@ public class SondeConfiguration : IEntityTypeConfiguration<Sonde>
         // Relation vers UniteMesure - Many-to-One
         // DeleteBehavior.Restrict : impossible de supprimer une UniteMesure si elle est utilisée par des Sondes
         builder.HasOne(s => s.UniteMesure)
-            .WithMany() // Pas de collection Sondes dans UniteMesure (utilisation de eager loading)
+            .WithMany(u => u.Sondes) // ← lier à la collection existante
             .HasForeignKey(s => s.UniteMesureId)
             .OnDelete(DeleteBehavior.Restrict);
 

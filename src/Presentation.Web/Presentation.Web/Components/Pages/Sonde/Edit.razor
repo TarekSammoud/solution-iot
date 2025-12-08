@@ -1,4 +1,4 @@
-@page "/localisations/edit/{id:guid}"
+@page "/sonde/edit/{Id:guid}"
 @using Application.DTOs.Sonde
 @using Application.DTOs.Localisation
 @using Application.DTOs.UniteMesure
@@ -10,143 +10,144 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Modifier Localisation</PageTitle>
+<h3>Modifier une Sonde</h3>
 
-<h3>Modifier Localisation</h3>
-
-@if (isLoading)
+@if (sonde == null)
 {
-    <div class="text-center">
-        <div class="spinner-border" role="status">
-            <span class="visually-hidden">Chargement...</span>
-        </div>
-        <p>Chargement de la localisation...</p>
-    </div>
+    <p><em>Chargement...</em></p>
 }
 else
 {
-    @if (!string.IsNullOrEmpty(errorMessage))
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <strong>Erreur !</strong> @errorMessage
-            <button type="button" class="btn-close" @onclick="() => errorMessage = null" aria-label="Close"></button>
-        </div>
-    }
-
-    <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+    <EditForm Model="sonde" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
-        <ValidationSummary class="text-danger" />
+        <ValidationSummary />
 
-        <div class="mb-3">
-            <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
-            <InputText id="nom" @bind-Value="model.Nom" class="form-control" placeholder="Ex: Salon, Bureau, Garage..." />
-            <ValidationMessage For="@(() => model.Nom)" class="text-danger" />
-        </div>
-
-        <div class="mb-3">
-            <label for="description" class="form-label">Description</label>
-            <InputTextArea id="description" @bind-Value="model.Description" class="form-control" rows="3" placeholder="Description détaillée de la localisation (optionnel)" />
-            <ValidationMessage For="@(() => model.Description)" class="text-danger" />
-        </div>
-
-        <div class="mt-4">
-            <button type="submit" class="btn btn-primary" disabled="@isSaving">
-                @if (isSaving)
+        <fieldset class="mb-3">
+            <legend>Informations générales</legend>
+            <InputText class="form-control mb-2" @bind-Value="sonde.Nom" placeholder="Nom" />
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.TypeSonde" @onchange="OnTypeSondeChanged">
+                @foreach (var type in Enum.GetValues<TypeSonde>())
                 {
-                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    <option value="@type">@type</option>
                 }
-                else
+            </InputSelect>
+            <InputCheckbox class="form-check-input" @bind-Value="sonde.EstActif" /> Actif
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Localisation & mesure</legend>
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.LocalisationId">
+                <option value="">-- Sélectionner --</option>
+                @foreach (var loc in localisations)
                 {
-                    <span class="oi oi-check me-2" aria-hidden="true"></span>
+                    <option value="@loc.Id">@loc.Nom</option>
                 }
-                Enregistrer
-            </button>
-            <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isSaving">
-                <span class="oi oi-x me-2" aria-hidden="true"></span> Annuler
-            </button>
-        </div>
+            </InputSelect>
+
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.UniteMesureId">
+                <option value="">-- Sélectionner --</option>
+                @foreach (var um in uniteMesuresFiltered)
+                {
+                    <option value="@um.Id">@um.Symbole</option>
+                }
+            </InputSelect>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Plages de mesure</legend>
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMin" placeholder="Valeur Min" />
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMax" placeholder="Valeur Max" />
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Communication</legend>
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.CanalCommunication" @onchange="OnCanalChanged">
+                @foreach (var canal in Enum.GetValues<CanalCommunication>())
+                {
+                    <option value="@canal">@canal</option>
+                }
+            </InputSelect>
+            <InputText class="form-control mb-2" @bind-Value="sonde.UrlDevice" placeholder="UrlDevice" disabled="@isUrlDisabled" />
+            <InputText class="form-control mb-2" @bind-Value="sonde.CredentialsDevice" placeholder="CredentialsDevice (optionnel)" />
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Installation</legend>
+            <InputDate class="form-control mb-2" @bind-Value="sonde.DateInstallation" />
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a class="btn btn-secondary ms-2" href="/sonde">Annuler</a>
     </EditForm>
 }
 
 @code {
-    /// <summary>
-    /// Paramètre de route : identifiant de la localisation à modifier.
-    /// </summary>
-    [Parameter]
-    public Guid Id { get; set; }
+    [Parameter] public Guid Id { get; set; }
 
-    private UpdateLocalisationDto model = new();
-    private bool isLoading = true;
-    private bool isSaving = false;
-    private string? errorMessage;
+    private UpdateSondeDto? sonde;
+    private IEnumerable<LocalisationDto> localisations = new List<LocalisationDto>();
+    private IEnumerable<UniteMesureDto> uniteMesures = new List<UniteMesureDto>();
+    private IEnumerable<UniteMesureDto> uniteMesuresFiltered => uniteMesures.Where(um => um.TypeSonde == sonde?.TypeSonde);
+    private bool isUrlDisabled = false;
 
-    /// <summary>
-    /// Méthode appelée lors de l'initialisation du composant.
-    /// Charge la localisation à modifier depuis l'API.
-    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            var localisation = await LocalisationService.GetByIdAsync(Id);
+        localisations = await LocalisationService.GetAllAsync();
+        uniteMesures = await UniteMesureService.GetAllAsync();
 
-            if (localisation == null)
+        var existing = await ApiService.GetByIdAsync(Id);
+        if (existing != null)
+        {
+            sonde = new UpdateSondeDto
             {
-                // Localisation non trouvée, retour à la liste
-                Navigation.NavigateTo("/localisations");
-                return;
-            }
+                Id = existing.Id,
+                Nom = existing.Nom,
+                LocalisationId = existing.LocalisationId,
+                EstActif = existing.EstActif,
+                DateInstallation = existing.DateInstallation,
+                CanalCommunication = existing.CanalCommunication,
+                UrlDevice = existing.UrlDevice,
+                CredentialsDevice = existing.CredentialsDevice,
+                TypeSonde = existing.TypeSonde,
+                UniteMesureId = existing.UniteMesureId,
+                ValeurMin = existing.ValeurMin,
+                ValeurMax = existing.ValeurMax
+            };
 
-            // Mapper la localisation vers le DTO de mise à jour
-            model.Id = Id;
-            model.Nom = localisation.Nom;
-            model.Description = localisation.Description;
-        }
-        catch (Exception ex)
-        {
-            errorMessage = $"Erreur lors du chargement de la localisation : {ex.Message}";
-            Console.WriteLine($"Erreur lors du chargement: {ex.Message}");
-        }
-        finally
-        {
-            isLoading = false;
+            isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
         }
     }
 
-    /// <summary>
-    /// Gère la soumission valide du formulaire de modification.
-    /// Appelle l'API pour mettre à jour la localisation et redirige vers la liste.
-    /// </summary>
+    private void OnTypeSondeChanged(ChangeEventArgs e)
+    {
+        if (sonde == null) return;
+
+        sonde.TypeSonde = Enum.Parse<TypeSonde>(e.Value?.ToString() ?? "Temperature");
+        if (!uniteMesuresFiltered.Any(um => um.Id == sonde.UniteMesureId))
+            sonde.UniteMesureId = Guid.Empty;
+    }
+
+    private void OnCanalChanged(ChangeEventArgs e)
+    {
+        if (sonde == null) return;
+
+        sonde.CanalCommunication = Enum.Parse<CanalCommunication>(e.Value?.ToString() ?? "HttpPush");
+        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
+        if (isUrlDisabled) sonde.UrlDevice = string.Empty;
+    }
+
     private async Task HandleValidSubmit()
     {
-        isSaving = true;
-        errorMessage = null;
+        if (sonde == null) return;
 
         try
         {
-            await LocalisationService.UpdateAsync(model);
-            Navigation.NavigateTo("/localisations");
-        }
-        catch (HttpRequestException ex)
-        {
-            errorMessage = $"Erreur lors de la modification de la localisation : {ex.Message}";
+            await ApiService.UpdateAsync(sonde);
+            Navigation.NavigateTo("/sonde");
         }
         catch (Exception ex)
         {
-            errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
-            Console.WriteLine($"Erreur lors de la modification: {ex.Message}");
+            // handle error
         }
-        finally
-        {
-            isSaving = false;
-        }
-    }
-
-    /// <summary>
-    /// Annule la modification et retourne à la liste des localisations.
-    /// </summary>
-    private void Cancel()
-    {
-        Navigation.NavigateTo("/localisations");
     }
 }

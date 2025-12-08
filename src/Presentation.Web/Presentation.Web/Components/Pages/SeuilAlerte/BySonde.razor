@@ -1,0 +1,199 @@
+﻿@page "/seuilalerte/sonde/{SondeId:guid}"
+@inject Presentation.Web.Services.SeuilAlerteApiService ApiService
+@inject NavigationManager Navigation
+@using Application.DTOs.SeuilAlerte
+@using Domain.Enums
+
+<h3>Configuration des seuils - @SondeNom</h3>
+
+@if (isLoading)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <div class="mb-3">
+        <strong>Unité :</strong> @Unite
+        @if (ValeurMin.HasValue || ValeurMax.HasValue)
+        {
+            <span class="ms-3"><strong>Plages:</strong> Min=@(ValeurMin?.ToString() ?? "-") / Max=@(ValeurMax?.ToString() ?? "-")</span>
+        }
+    </div>
+
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">🔵 Seuil MINIMUM</div>
+                <div class="card-body">
+                    @if (seuilMinActif != null)
+                    {
+                        <p>✅ Actif: <strong>@seuilMinActif.Valeur</strong> (créé le @seuilMinActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
+                        <button class="btn btn-sm btn-primary me-2" @onclick="() => Edit(seuilMinActif.Id)">Modifier</button>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Toggle(seuilMinActif.Id)">Désactiver</button>
+                    }
+                    else
+                    {
+                        <p>Aucun seuil minimum actif.</p>
+                        <button class="btn btn-sm btn-success" @onclick="CreateMin">Créer un seuil minimum</button>
+                    }
+
+                    <hr />
+                    <h6>Historique (inactifs)</h6>
+                    @if (historiqueMin.Any())
+                    {
+                        <ul>
+                            @foreach (var h in historiqueMin)
+                            {
+                                <li>
+                                    @h.Valeur (créé le @h.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))
+                                    <button class="btn btn-sm btn-link" @onclick="() => Reactivate(h.Id)">Réactiver</button>
+                                    <button class="btn btn-sm btn-link text-danger" @onclick="() => Delete(h.Id)">Supprimer</button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Aucun historique.</p>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card mb-3">
+                <div class="card-header">🔴 Seuil MAXIMUM</div>
+                <div class="card-body">
+                    @if (seuilMaxActif != null)
+                    {
+                        <p>✅ Actif: <strong>@seuilMaxActif.Valeur</strong> (créé le @seuilMaxActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
+                        <button class="btn btn-sm btn-primary me-2" @onclick="() => Edit(seuilMaxActif.Id)">Modifier</button>
+                        <button class="btn btn-sm btn-warning" @onclick="() => Toggle(seuilMaxActif.Id)">Désactiver</button>
+                    }
+                    else
+                    {
+                        <p>Aucun seuil maximum actif.</p>
+                        <button class="btn btn-sm btn-success" @onclick="CreateMax">Créer un seuil maximum</button>
+                    }
+
+                    <hr />
+                    <h6>Historique (inactifs)</h6>
+                    @if (historiqueMax.Any())
+                    {
+                        <ul>
+                            @foreach (var h in historiqueMax)
+                            {
+                                <li>
+                                    @h.Valeur (créé le @h.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))
+                                    <button class="btn btn-sm btn-link" @onclick="() => Reactivate(h.Id)">Réactiver</button>
+                                    <button class="btn btn-sm btn-link text-danger" @onclick="() => Delete(h.Id)">Supprimer</button>
+                                </li>
+                            }
+                        </ul>
+                    }
+                    else
+                    {
+                        <p class="text-muted">Aucun historique.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="btn btn-secondary" @onclick="Back">Retour à la sonde</button>
+}
+
+@code {
+    [Parameter] public Guid SondeId { get; set; }
+
+    private bool isLoading = true;
+    private string SondeNom = "";
+    private string Unite = "";
+    private decimal? ValeurMin;
+    private decimal? ValeurMax;
+
+    private SeuilAlerteDto? seuilMinActif;
+    private SeuilAlerteDto? seuilMaxActif;
+    private List<SeuilAlerteDto> historiqueMin = new();
+    private List<SeuilAlerteDto> historiqueMax = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isLoading = true;
+        try
+        {
+            var all = await ApiService.GetBySondeAsync(SondeId);
+            // récupérer détails sonde via autre service si souhaité (ici on prend SondeNom depuis les DTOs)
+            if (all.Any())
+            {
+                SondeNom = all.First().SondeId.ToString();
+            }
+            // TODO: charger unité/valeurs min/max depuis SondeApiService si besoin
+            // pour l'instant on garde vide si non fourni
+
+            seuilMinActif = all.FirstOrDefault(s => s.TypeSeuil == TypeSeuil.Minimum && s.EstActif);
+            seuilMaxActif = all.FirstOrDefault(s => s.TypeSeuil == TypeSeuil.Maximum && s.EstActif);
+
+            historiqueMin = all.Where(s => s.TypeSeuil == TypeSeuil.Minimum && !s.EstActif).OrderByDescending(s => s.DateCreation).ToList();
+            historiqueMax = all.Where(s => s.TypeSeuil == TypeSeuil.Maximum && !s.EstActif).OrderByDescending(s => s.DateCreation).ToList();
+        }
+        catch (Exception ex)
+        {
+            // log si besoin
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CreateMin() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/{TypeSeuil.Minimum}");
+    private void CreateMax() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/{TypeSeuil.Maximum}");
+    private void Edit(Guid id) => Navigation.NavigateTo($"/seuilalerte/edit/{id}");
+    private void Back() => Navigation.NavigateTo($"/sonde/details/{SondeId}");
+
+    private async Task Toggle(Guid id)
+    {
+        var res = await ApiService.ToggleAsync(id);
+        if (res.IsSuccessStatusCode) await Load();
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            // show error (simple alert)
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+        }
+    }
+
+    private async Task Reactivate(Guid id)
+    {
+        // toggle should reactivate
+        var res = await ApiService.ToggleAsync(id);
+        if (res.IsSuccessStatusCode) await Load();
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+        }
+    }
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private async Task Delete(Guid id)
+    {
+        var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Supprimer ce seuil ?");
+        if (!confirm) return;
+        var res = await ApiService.DeleteAsync(id);
+        if (res.IsSuccessStatusCode) await Load();
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+        }
+    }
+}

@@ -36,17 +36,17 @@ public class Sonde : Device
     /// Collection des relevés de mesure effectués par cette sonde.
     /// Relation One-to-Many : une sonde peut avoir de nombreux relevés dans le temps.
     /// </summary>
-    // public ICollection<Releve> Releves { get; set; } = new List<Releve>();
+    public ICollection<Releve> Releves { get; set; } = new List<Releve>();
 
     /// <summary>
     /// Collection des seuils d'alerte configurés pour cette sonde.
     /// Relation One-to-Many : une sonde peut avoir plusieurs seuils (min, max, critique).
     /// </summary>
-    // public ICollection<SeuilAlerte> SeuilsAlerte { get; set; } = new List<SeuilAlerte>();
+    public ICollection<SeuilAlerte> SeuilsAlerte { get; set; } = new List<SeuilAlerte>();
 
     /// <summary>
     /// Collection des alertes déclenchées par cette sonde.
     /// Relation One-to-Many : une sonde peut déclencher de nombreuses alertes dans le temps.
     /// </summary>
-    // public ICollection<Alerte> Alertes { get; set; } = new List<Alerte>();
+    public ICollection<Alerte> Alertes { get; set; } = new List<Alerte>();
 }

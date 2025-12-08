@@ -1,0 +1,134 @@
+﻿@page "/seuilalerte/create/{SondeId:guid}/{TypeSeuil:int}"
+@inject Presentation.Web.Services.SeuilAlerteApiService ApiService
+@inject NavigationManager Navigation
+@inject SondeApiService SondeApiService
+@using Application.DTOs.SeuilAlerte
+@using Domain.Enums
+
+<h3>Créer un seuil - @typeLabel pour la sonde @SondeNom</h3>
+
+@if (isLoading)
+{
+    <p>Chargement...</p>
+}
+else
+{
+    <EditForm Model="model" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Sonde</label>
+            <input class="form-control" value="@SondeNom" disabled />
+        </div>
+
+        <div class="mb-3">
+            <label>Type</label>
+            <input class="form-control" value="@typeLabel" disabled />
+        </div>
+
+        <div class="mb-3">
+            <label>Valeur (@Unite)</label>
+            <InputNumber class="form-control" @bind-Value="model.Valeur" step="0.01" />
+            @if (!string.IsNullOrEmpty(valueWarning))
+            {
+                <div class="text-danger">@valueWarning</div>
+            }
+        </div>
+
+        <div class="mb-3 form-check">
+            <InputCheckbox class="form-check-input" @bind-Value="model.EstActif" />
+            <label class="form-check-label">Actif</label>
+        </div>
+
+        @if (existingActiveWarning != null)
+        {
+            <div class="alert alert-warning">@existingActiveWarning</div>
+        }
+
+        <button class="btn btn-primary" type="submit">Créer</button>
+        <button class="btn btn-secondary ms-2" @onclick="Cancel" type="button">Annuler</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid SondeId { get; set; }
+    [Parameter] public TypeSeuil TypeSeuil { get; set; }
+
+    private CreateSeuilAlerteDto model = new();
+    private bool isLoading = true;
+    private string SondeNom = "";
+    private string Unite = "";
+    private decimal? SondeValeurMin;
+    private decimal? SondeValeurMax;
+    private string? existingActiveWarning;
+    private string? valueWarning;
+    private string typeLabel => TypeSeuil == TypeSeuil.Minimum ? "Minimum" : "Maximum";
+
+    protected override async Task OnInitializedAsync()
+    {
+        model.SondeId = SondeId;
+        model.TypeSeuil = TypeSeuil;
+        model.EstActif = true;
+
+        await Load();
+    }
+
+    private async Task Load()
+    {
+        isLoading = true;
+        try
+        {
+            var sonde = await SondeApiService.GetByIdAsync(SondeId);
+            if (sonde != null)
+            {
+                SondeNom = sonde.Nom;
+                Unite = sonde.UniteMesureId.ToString() ?? "";
+                SondeValeurMin = sonde.ValeurMin;
+                SondeValeurMax = sonde.ValeurMax;
+            }
+
+            var seuils = await ApiService.GetBySondeAsync(SondeId);
+            var actif = seuils.FirstOrDefault(s => s.TypeSeuil == TypeSeuil && s.EstActif);
+            if (actif != null)
+            {
+                existingActiveWarning = $"Un seuil {typeLabel} est déjà actif (valeur {actif.Valeur}). Il sera automatiquement désactivé si vous activez celui-ci.";
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        // client-side validation des plages
+        valueWarning = null;
+        if (TypeSeuil == TypeSeuil.Minimum && SondeValeurMin.HasValue && (decimal)model.Valeur < SondeValeurMin.Value)
+        {
+            valueWarning = $"Valeur minimale autorisée : {SondeValeurMin.Value}";
+            return;
+        }
+        if (TypeSeuil == TypeSeuil.Maximum && SondeValeurMax.HasValue && (decimal) model.Valeur > SondeValeurMax.Value)
+        {
+            valueWarning = $"Valeur maximale autorisée : {SondeValeurMax.Value}";
+            return;
+        }
+
+        var res = await ApiService.CreateAsync(model);
+        if (res.IsSuccessStatusCode)
+        {
+            Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+        }
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+        }
+    }
+
+    private void Cancel() => Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+}

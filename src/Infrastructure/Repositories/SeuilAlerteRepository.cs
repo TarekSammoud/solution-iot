@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -140,5 +141,25 @@ public class SeuilAlerteRepository : ISeuilAlerteRepository
     public async Task<bool> ExistsAsync(Guid id)
     {
         return await _context.SeuilsAlerte.AnyAsync(s => s.Id == id);
+    }
+
+    public async Task SaveChangesAsync()
+    {
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task<IEnumerable<SeuilAlerte>> GetBySondeIdAsync(Guid sondeId)
+    {
+        return await _context.SeuilsAlerte
+            .Where(x => x.SondeId == sondeId)
+            .AsNoTracking()
+            .ToListAsync();
+    }
+
+    public async Task<SeuilAlerte?> FindActiveBySondeAndTypeAsync(Guid sondeId, TypeSeuil type)
+    {
+        return await _context.SeuilsAlerte
+            .Where(x => x.SondeId == sondeId && x.TypeSeuil == type && x.EstActif)
+            .FirstOrDefaultAsync();
     }
 }

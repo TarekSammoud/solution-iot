@@ -52,7 +52,7 @@ public class SeuilAlerteConfiguration : IEntityTypeConfiguration<SeuilAlerte>
         // Relation avec Sonde
         // Cascade delete: si une sonde est supprimée, tous ses seuils d'alerte sont supprimés
         builder.HasOne(s => s.Sonde)
-            .WithMany()
+            .WithMany(sonde => sonde.SeuilsAlerte) // <-- préciser la navigation inverse
             .HasForeignKey(s => s.SondeId)
             .OnDelete(DeleteBehavior.Cascade);
 

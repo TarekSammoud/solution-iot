@@ -26,6 +26,11 @@ builder.Services.AddHttpClient<SystemePartenaireApiService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
 });
 
+builder.Services.AddHttpClient<SeuilAlerteApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
+});
+
 // Configuration du HttpClient pour UniteMesureApiService
 builder.Services.AddHttpClient<UniteMesureApiService>(client =>
 {

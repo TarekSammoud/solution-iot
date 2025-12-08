@@ -1,4 +1,5 @@
 using Domain.Entities;
+using Domain.Enums;
 
 namespace Domain.Interfaces;
 
@@ -72,4 +73,11 @@ public interface ISeuilAlerteRepository
     /// <param name="id">Identifiant du seuil d'alerte.</param>
     /// <returns>True si le seuil existe, false sinon.</returns>
     Task<bool> ExistsAsync(Guid id);
+
+    Task<IEnumerable<SeuilAlerte>> GetBySondeIdAsync(Guid sondeId);
+
+    Task<SeuilAlerte?> FindActiveBySondeAndTypeAsync(Guid sondeId, TypeSeuil type);
+    Task SaveChangesAsync();
+
+
 }

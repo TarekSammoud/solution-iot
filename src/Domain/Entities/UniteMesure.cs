@@ -42,5 +42,5 @@ public class UniteMesure
 
     // Navigation properties
     // TODO: Ajouter la navigation vers Sonde quand l'entité sera créée
-    // public ICollection<Sonde> Sondes { get; set; } = new List<Sonde>();
+     public ICollection<Sonde> Sondes { get; set; } = new List<Sonde>();
 }

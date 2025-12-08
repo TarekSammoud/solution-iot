@@ -1,0 +1,96 @@
+﻿@page "/seuilalerte/edit/{Id:guid}"
+@inject Presentation.Web.Services.SeuilAlerteApiService ApiService
+@inject NavigationManager Navigation
+@inject SondeApiService SondeApiService
+@using Application.DTOs.SeuilAlerte
+
+<h3>Modifier un seuil</h3>
+
+@if (isLoading)
+{
+    <p>Chargement...</p>
+}
+else if (model == null)
+{
+    <p class="text-danger">Seuil introuvable.</p>
+}
+else
+{
+    <EditForm Model="modelEdit" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <div class="mb-3">
+            <label>Valeur (@Unite)</label>
+            <InputNumber class="form-control" @bind-Value="modelEdit.Valeur" step="0.01" />
+        </div>
+
+        <div class="mb-3 form-check">
+            <InputCheckbox class="form-check-input" @bind-Value="modelEdit.EstActif" />
+            <label class="form-check-label">Actif</label>
+        </div>
+
+        <div class="mb-3">
+            <label>Date de création</label>
+            <input class="form-control" value="@model.DateCreation.ToLocalTime().ToString("dd/MM/yyyy HH:mm")" disabled />
+        </div>
+
+        <button class="btn btn-primary" type="submit">Enregistrer</button>
+        <button class="btn btn-secondary ms-2" @onclick="Cancel" type="button">Annuler</button>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private SeuilAlerteDto? model;
+    private UpdateSeuilAlerteDto modelEdit = new();
+    private bool isLoading = true;
+    private string Unite = "";
+
+    protected override async Task OnInitializedAsync() => await Load();
+
+    private async Task Load()
+    {
+        isLoading = true;
+        try
+        {
+            model = await ApiService.GetByIdAsync(Id);
+            if (model != null)
+            {
+                modelEdit.Valeur = model.Valeur;
+                modelEdit.EstActif = model.EstActif;
+
+                var sonde = await SondeApiService.GetByIdAsync(model.SondeId);
+                if (sonde != null) Unite = sonde.UniteMesureId.ToString() ?? "";
+            }
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        var res = await ApiService.UpdateAsync(Id, modelEdit);
+        if (res.IsSuccessStatusCode)
+        {
+            var updated = await res.Content.ReadFromJsonAsync<SeuilAlerteDto>();
+            Navigation.NavigateTo($"/seuilalerte/sonde/{updated!.SondeId}");
+        }
+        else
+        {
+            var txt = await res.Content.ReadAsStringAsync();
+            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+        }
+    }
+
+    private void Cancel()
+    {
+        if (model != null) Navigation.NavigateTo($"/seuilalerte/sonde/{model.SondeId}");
+        else Navigation.NavigateTo("/");
+    }
+
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+}

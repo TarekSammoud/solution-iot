@@ -22,12 +22,14 @@ public static class DependencyInjection
         services.AddSingleton<SystemePartenaireMapper>();
         services.AddSingleton<UniteMesureMapper>();
         services.AddSingleton<UserMapper>();
+        services.AddSingleton<SeuilAlerteMapper>();
 
         services.AddScoped<ILocalisationService, LocalisationService>();
         services.AddScoped<ISystemePartenaireService, SystemePartenaireService>();
         services.AddScoped<IUniteMesureService, UniteMesureService>();
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISondeService, SondeService>();
+        services.AddScoped<ISeuilAlerteService, SeuilAlerteService>();
 
         return services;
     }

@@ -1,4 +1,4 @@
-@page "/sonde/edit/{Id:guid}"
+@page "/sonde/create"
 @using Application.DTOs.Sonde
 @using Application.DTOs.Localisation
 @using Application.DTOs.UniteMesure
@@ -10,7 +10,7 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<h3>Modifier une Sonde</h3>
+<h3>Créer une Sonde</h3>
 
 @if (sonde == null)
 {
@@ -76,15 +76,13 @@ else
             <InputDate class="form-control mb-2" @bind-Value="sonde.DateInstallation" />
         </fieldset>
 
-        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <button type="submit" class="btn btn-primary">Créer</button>
         <a class="btn btn-secondary ms-2" href="/sonde">Annuler</a>
     </EditForm>
 }
 
 @code {
-    [Parameter] public Guid Id { get; set; }
-
-    private UpdateSondeDto? sonde;
+    private CreateSondeDto? sonde;
     private IEnumerable<LocalisationDto> localisations = new List<LocalisationDto>();
     private IEnumerable<UniteMesureDto> uniteMesures = new List<UniteMesureDto>();
     private IEnumerable<UniteMesureDto> uniteMesuresFiltered => uniteMesures.Where(um => um.TypeSonde == sonde?.TypeSonde);
@@ -95,28 +93,17 @@ else
         localisations = await LocalisationService.GetAllAsync();
         uniteMesures = await UniteMesureService.GetAllAsync();
 
-        var existing = await ApiService.GetByIdAsync(Id);
-        if (existing != null)
+        sonde = new CreateSondeDto
         {
-            sonde = new UpdateSondeDto
-            {
-                Id = existing.Id,
-                Nom = existing.Nom,
-                LocalisationId = existing.LocalisationId,
-                EstActif = existing.EstActif,
-                DateInstallation = existing.DateInstallation,
-                CanalCommunication = existing.CanalCommunication,
-                UrlDevice = existing.UrlDevice,
-                CredentialsDevice = existing.CredentialsDevice,
-                TypeSonde = existing.TypeSonde,
-                UniteMesureId = existing.UniteMesureId,
-                ValeurMin = existing.ValeurMin,
-                ValeurMax = existing.ValeurMax
-            };
+            EstActif = true,
+            TypeSonde = TypeSonde.Temperature,
+            CanalCommunication = CanalCommunication.HttpPush,
+            DateInstallation = DateTime.Today
+        };
 
-            isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
-        }
+        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
     }
+
 
     private void OnTypeSondeChanged(ChangeEventArgs e)
     {
@@ -142,12 +129,12 @@ else
 
         try
         {
-            await ApiService.UpdateAsync(sonde);
+            await ApiService.CreateAsync(sonde);
             Navigation.NavigateTo("/sonde");
         }
         catch (Exception ex)
         {
-            // handle error
+            Console.WriteLine(ex.Message);
         }
     }
 }

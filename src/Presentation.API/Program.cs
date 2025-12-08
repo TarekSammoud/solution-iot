@@ -21,6 +21,8 @@ builder.Services.AddScoped<ISystemePartenaireRepository, SystemePartenaireReposi
 builder.Services.AddScoped<IUniteMesureRepository, UniteMesureRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISondeRepository, SondeRepository>();
+builder.Services.AddScoped<IAlerteRepository, AlerteRepository>();
+builder.Services.AddScoped<ISeuilAlerteRepository, SeuilAlerteRepository>();
 
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();
