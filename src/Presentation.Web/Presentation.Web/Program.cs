@@ -42,6 +42,11 @@ builder.Services.AddHttpClient<SondeApiService>(client =>
     client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
 });
 
+builder.Services.AddHttpClient<ReleveApiService>(client =>
+{
+    client.BaseAddress = new Uri(builder.Configuration["ApiBaseUrl"] ?? "https://localhost:7001/");
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
