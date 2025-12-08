@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.SystemePartenaire;
 using Application.Mappers;
 using Application.Services.Interfaces;
 using Domain.Interfaces;

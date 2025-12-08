@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.SystemePartenaire;
 
 namespace Application.Services.Interfaces;
 

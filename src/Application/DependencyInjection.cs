@@ -27,6 +27,7 @@ public static class DependencyInjection
         services.AddScoped<ISystemePartenaireService, SystemePartenaireService>();
         services.AddScoped<IUniteMesureService, UniteMesureService>();
         services.AddScoped<IUserService, UserService>();
+        services.AddScoped<ISondeService, SondeService>();
 
         return services;
     }

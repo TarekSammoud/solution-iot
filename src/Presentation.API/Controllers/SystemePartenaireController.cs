@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.SystemePartenaire;
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 

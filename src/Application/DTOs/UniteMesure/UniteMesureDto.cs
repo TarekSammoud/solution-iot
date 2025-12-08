@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Domain.Enums;
 
-namespace Application.DTOs;
+namespace Application.DTOs.UniteMesure;
 
 public class UniteMesureDto
 {

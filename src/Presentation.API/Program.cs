@@ -20,6 +20,7 @@ builder.Services.AddScoped<IEtatActionneurRepository, EtatActionneurRepository>(
 builder.Services.AddScoped<ISystemePartenaireRepository, SystemePartenaireRepository>();
 builder.Services.AddScoped<IUniteMesureRepository, UniteMesureRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ISondeRepository, SondeRepository>();
 
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();

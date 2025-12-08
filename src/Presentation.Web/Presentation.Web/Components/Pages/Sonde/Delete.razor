@@ -1,14 +1,18 @@
-@page "/systeme-partenaires/delete/{id:guid}"
-@using Application.DTOs
-@using Application.DTOs.SystemePartenaire
+@page "/localisations/delete/{id:guid}"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Localisation
+@using Application.DTOs.UniteMesure
+@using Domain.Enums
 @using Presentation.Web.Services
-@inject SystemePartenaireApiService ApiService
+@inject SondeApiService ApiService
+@inject LocalisationApiService LocalisationService
+@inject UniteMesureApiService UniteMesureService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
-<PageTitle>Supprimer Système Partenaire</PageTitle>
+<PageTitle>Supprimer Localisation</PageTitle>
 
-<h3>Supprimer Système Partenaire</h3>
+<h3>Supprimer Localisation</h3>
 
 @if (isLoading)
 {
@@ -16,13 +20,13 @@
         <div class="spinner-border" role="status">
             <span class="visually-hidden">Chargement...</span>
         </div>
-        <p>Chargement du système partenaire...</p>
+        <p>Chargement de la localisation...</p>
     </div>
 }
-else if (systeme == null)
+else if (localisation == null)
 {
     <div class="alert alert-warning" role="alert">
-        Le système partenaire n'existe pas ou a déjà été supprimé.
+        La localisation demandée n'existe pas ou a déjà été supprimée.
     </div>
     <button class="btn btn-secondary" @onclick="Cancel">
         Retour à la liste
@@ -35,7 +39,7 @@ else
             <span class="oi oi-warning me-2" aria-hidden="true"></span>
             Attention !
         </h4>
-        <p>Êtes-vous sûr de vouloir supprimer ce système partenaire ?</p>
+        <p>Êtes-vous sûr de vouloir supprimer cette localisation ?</p>
         <p class="mb-0"><strong>Cette action est irréversible.</strong></p>
     </div>
 
@@ -49,37 +53,27 @@ else
 
     <div class="card">
         <div class="card-header">
-            <h5>Détails du système partenaire</h5>
+            <h5>Détails de la localisation</h5>
         </div>
         <div class="card-body">
             <dl class="row">
                 <dt class="col-sm-3">Nom :</dt>
-                <dd class="col-sm-9">@systeme.Nom</dd>
+                <dd class="col-sm-9">@localisation.Nom</dd>
 
-                <dt class="col-sm-3">URL de base :</dt>
-                <dd class="col-sm-9">@systeme.UrlBase</dd>
-
-                <dt class="col-sm-3">Modes :</dt>
+                <dt class="col-sm-3">Description :</dt>
                 <dd class="col-sm-9">
-                    @if (systeme.EstAppelant)
+                    @if (!string.IsNullOrEmpty(localisation.Description))
                     {
-                        <span class="badge bg-primary me-1">Appelant</span>
+                        @localisation.Description
                     }
-                    @if (systeme.EstAppele)
+                    else
                     {
-                        <span class="badge bg-success">Appelé</span>
-                    }
-                    @if (!systeme.EstAppelant && !systeme.EstAppele)
-                    {
-                        <span class="badge bg-secondary">Aucun</span>
+                        <em class="text-muted">Aucune description</em>
                     }
                 </dd>
 
-                <dt class="col-sm-3">Actif :</dt>
-                <dd class="col-sm-9">@(systeme.EstActif ? "Oui" : "Non")</dd>
-
                 <dt class="col-sm-3">Date de création :</dt>
-                <dd class="col-sm-9">@systeme.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
+                <dd class="col-sm-9">@localisation.DateCreation.ToString("dd/MM/yyyy HH:mm")</dd>
             </dl>
         </div>
     </div>
@@ -103,23 +97,36 @@ else
 }
 
 @code {
+    /// <summary>
+    /// Paramètre de route : identifiant de la localisation à supprimer.
+    /// </summary>
     [Parameter]
     public Guid Id { get; set; }
 
-    private SystemePartenaireDto? systeme;
+    private LocalisationDto? localisation;
     private bool isLoading = true;
     private bool isDeleting = false;
     private string? errorMessage;
 
+    /// <summary>
+    /// Méthode appelée lors de l'initialisation du composant.
+    /// Charge la localisation à supprimer depuis l'API.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            systeme = await ApiService.GetByIdAsync(Id);
+            localisation = await LocalisationService.GetByIdAsync(Id);
+
+            if (localisation == null)
+            {
+                // La localisation n'existe pas, on l'affiche dans le markup
+                Console.WriteLine($"Localisation {Id} non trouvée");
+            }
         }
         catch (Exception ex)
         {
-            errorMessage = $"Erreur lors du chargement du système partenaire : {ex.Message}";
+            errorMessage = $"Erreur lors du chargement de la localisation : {ex.Message}";
             Console.WriteLine($"Erreur lors du chargement: {ex.Message}");
         }
         finally
@@ -128,6 +135,10 @@ else
         }
     }
 
+    /// <summary>
+    /// Confirme et exécute la suppression de la localisation.
+    /// Appelle l'API pour supprimer la localisation et redirige vers la liste.
+    /// </summary>
     private async Task ConfirmDelete()
     {
         isDeleting = true;
@@ -139,16 +150,16 @@ else
 
             if (success)
             {
-                Navigation.NavigateTo("/systeme-partenaires");
+                Navigation.NavigateTo("/localisations");
             }
             else
             {
-                errorMessage = "La suppression a échoué. L'élément n'existe peut-être plus.";
+                errorMessage = "La suppression a échoué. La localisation n'existe peut-être plus.";
             }
         }
         catch (HttpRequestException ex)
         {
-            errorMessage = $"Erreur lors de la suppression : {ex.Message}";
+            errorMessage = $"Erreur lors de la suppression de la localisation : {ex.Message}";
         }
         catch (Exception ex)
         {
@@ -161,8 +172,11 @@ else
         }
     }
 
+    /// <summary>
+    /// Annule la suppression et retourne à la liste des localisations.
+    /// </summary>
     private void Cancel()
     {
-        Navigation.NavigateTo("/systeme-partenaires");
+        Navigation.NavigateTo("/localisations");
     }
 }

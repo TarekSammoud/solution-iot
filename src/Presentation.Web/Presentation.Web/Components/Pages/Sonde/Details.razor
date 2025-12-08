@@ -1,0 +1,60 @@
+﻿@page "/sonde/details/{Id:guid}"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Localisation
+@using Application.DTOs.UniteMesure
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject SondeApiService ApiService
+@inject LocalisationApiService LocalisationService
+@inject UniteMesureApiService UniteMesureService
+@inject NavigationManager Navigation
+
+<h3>Détails Sonde</h3>
+
+@if (sonde != null)
+{
+    <dl class="row">
+        <dt class="col-sm-3">Nom</dt>
+        <dd class="col-sm-9">@sonde.Nom</dd>
+        <dt class="col-sm-3">Type</dt>
+        <dd class="col-sm-9">@sonde.TypeSonde</dd>
+        <dt class="col-sm-3">Localisation</dt>
+        <dd class="col-sm-9">@sonde.LocalisationNom</dd>
+        <dt class="col-sm-3">Unité</dt>
+        <dd class="col-sm-9">@sonde.UniteMesureSymbole</dd>
+        <dt class="col-sm-3">Statut</dt>
+        <dd class="col-sm-9">@sonde.EstActif</dd>
+        <dt class="col-sm-3">Date Installation</dt>
+        <dd class="col-sm-9">@sonde.DateInstallation</dd>
+        <dt class="col-sm-3">Date Creation</dt>
+        <dd class="col-sm-9">@sonde.DateCreation</dd>
+        <dt class="col-sm-3">Canal Communication</dt>
+        <dd class="col-sm-9">@sonde.CanalCommunication</dd>
+        <dt class="col-sm-3">Url Device</dt>
+        <dd class="col-sm-9">@sonde.UrlDevice</dd>
+        <dt class="col-sm-3">Credentials Device</dt>
+        <dd class="col-sm-9">@sonde.CredentialsDevice</dd>
+        <dt class="col-sm-3">Valeur Min</dt>
+        <dd class="col-sm-9">@sonde.ValeurMin</dd>
+        <dt class="col-sm-3">Valeur Max</dt>
+        <dd class="col-sm-9">@sonde.ValeurMax</dd>
+    </dl>
+
+    <a class="btn btn-warning me-2" href="@($"/sonde/edit/{sonde.Id}")">Modifier</a>
+    <a class="btn btn-danger me-2" href="@($"/sonde/delete/{sonde.Id}")">Supprimer</a>
+    <a class="btn btn-secondary" href="/sonde">Retour à la liste</a>
+}
+else
+{
+    <p>Chargement...</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private SondeDto? sonde;
+
+    protected override async Task OnInitializedAsync()
+    {
+        sonde = await ApiService.GetByIdAsync(Id);
+    }
+}

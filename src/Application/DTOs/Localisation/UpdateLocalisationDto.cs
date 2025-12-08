@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace Application.DTOs;
+namespace Application.DTOs.Localisation;
 
 /// <summary>
 /// DTO pour la mise à jour d'une localisation existante.

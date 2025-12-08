@@ -1,0 +1,153 @@
+@page "/sonde/edit/{Id:guid}"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Localisation
+@using Application.DTOs.UniteMesure
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject SondeApiService ApiService
+@inject LocalisationApiService LocalisationService
+@inject UniteMesureApiService UniteMesureService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Modifier une Sonde</h3>
+
+@if (sonde == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <EditForm Model="sonde" OnValidSubmit="HandleValidSubmit">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <fieldset class="mb-3">
+            <legend>Informations générales</legend>
+            <InputText class="form-control mb-2" @bind-Value="sonde.Nom" placeholder="Nom" />
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.TypeSonde" @onchange="OnTypeSondeChanged">
+                @foreach (var type in Enum.GetValues<TypeSonde>())
+                {
+                    <option value="@type">@type</option>
+                }
+            </InputSelect>
+            <InputCheckbox class="form-check-input" @bind-Value="sonde.EstActif" /> Actif
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Localisation & mesure</legend>
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.LocalisationId">
+                <option value="">-- Sélectionner --</option>
+                @foreach (var loc in localisations)
+                {
+                    <option value="@loc.Id">@loc.Nom</option>
+                }
+            </InputSelect>
+
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.UniteMesureId">
+                <option value="">-- Sélectionner --</option>
+                @foreach (var um in uniteMesuresFiltered)
+                {
+                    <option value="@um.Id">@um.Symbole</option>
+                }
+            </InputSelect>
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Plages de mesure</legend>
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMin" placeholder="Valeur Min" />
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMax" placeholder="Valeur Max" />
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Communication</legend>
+            <InputSelect class="form-select mb-2" @bind-Value="sonde.CanalCommunication" @onchange="OnCanalChanged">
+                @foreach (var canal in Enum.GetValues<CanalCommunication>())
+                {
+                    <option value="@canal">@canal</option>
+                }
+            </InputSelect>
+            <InputText class="form-control mb-2" @bind-Value="sonde.UrlDevice" placeholder="UrlDevice" disabled="@isUrlDisabled" />
+            <InputText class="form-control mb-2" @bind-Value="sonde.CredentialsDevice" placeholder="CredentialsDevice (optionnel)" />
+        </fieldset>
+
+        <fieldset class="mb-3">
+            <legend>Installation</legend>
+            <InputDate class="form-control mb-2" @bind-Value="sonde.DateInstallation" />
+        </fieldset>
+
+        <button type="submit" class="btn btn-primary">Enregistrer</button>
+        <a class="btn btn-secondary ms-2" href="/sonde">Annuler</a>
+    </EditForm>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+
+    private UpdateSondeDto? sonde;
+    private IEnumerable<LocalisationDto> localisations = new List<LocalisationDto>();
+    private IEnumerable<UniteMesureDto> uniteMesures = new List<UniteMesureDto>();
+    private IEnumerable<UniteMesureDto> uniteMesuresFiltered => uniteMesures.Where(um => um.TypeSonde == sonde?.TypeSonde);
+    private bool isUrlDisabled = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        localisations = await LocalisationService.GetAllAsync();
+        uniteMesures = await UniteMesureService.GetAllAsync();
+
+        var existing = await ApiService.GetByIdAsync(Id);
+        if (existing != null)
+        {
+            sonde = new UpdateSondeDto
+            {
+                Id = existing.Id,
+                Nom = existing.Nom,
+                LocalisationId = existing.LocalisationId,
+                EstActif = existing.EstActif,
+                DateInstallation = existing.DateInstallation,
+                CanalCommunication = existing.CanalCommunication,
+                UrlDevice = existing.UrlDevice,
+                CredentialsDevice = existing.CredentialsDevice,
+                TypeSonde = existing.TypeSonde,
+                UniteMesureId = existing.UniteMesureId,
+                ValeurMin = existing.ValeurMin,
+                ValeurMax = existing.ValeurMax
+            };
+
+            isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
+        }
+    }
+
+    private void OnTypeSondeChanged(ChangeEventArgs e)
+    {
+        if (sonde == null) return;
+
+        sonde.TypeSonde = Enum.Parse<TypeSonde>(e.Value?.ToString() ?? "Temperature");
+        if (!uniteMesuresFiltered.Any(um => um.Id == sonde.UniteMesureId))
+            sonde.UniteMesureId = Guid.Empty;
+    }
+
+    private void OnCanalChanged(ChangeEventArgs e)
+    {
+        if (sonde == null) return;
+
+        sonde.CanalCommunication = Enum.Parse<CanalCommunication>(e.Value?.ToString() ?? "HttpPush");
+        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
+        if (isUrlDisabled) sonde.UrlDevice = string.Empty;
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        if (sonde == null) return;
+
+        try
+        {
+            await ApiService.UpdateAsync(sonde);
+            Navigation.NavigateTo("/sonde");
+        }
+        catch (Exception ex)
+        {
+            // handle error
+        }
+    }
+}

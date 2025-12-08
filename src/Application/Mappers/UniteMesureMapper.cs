@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.UniteMesure;
 using Domain.Entities;
 using Riok.Mapperly.Abstractions;
 

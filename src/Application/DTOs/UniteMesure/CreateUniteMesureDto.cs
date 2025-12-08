@@ -1,13 +1,10 @@
 using System.ComponentModel.DataAnnotations;
 using Domain.Enums;
 
-namespace Application.DTOs;
+namespace Application.DTOs.UniteMesure;
 
-public class UpdateUniteMesureDto
+public class CreateUniteMesureDto
 {
-    [Required]
-    public Guid Id { get; set; }
-
     [Required]
     [StringLength(10)]
     public string Symbole { get; set; } = string.Empty;

@@ -32,6 +32,12 @@ public class UserApiService
             ?? new List<UserDto>();
     }
 
+    public async Task<List<UserDto>> SearchUsersAsync(string query)
+    {
+        return await _httpClient.GetFromJsonAsync<List<UserDto>>($"{ApiBaseUrl}?searchString={query}")
+            ?? new List<UserDto>();
+    }
+
     /// <summary>
     /// Récupère une utilisateur par son identifiant.
     /// </summary>

@@ -1,81 +1,51 @@
 using Domain.Entities;
 using Domain.Enums;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
-namespace Domain.Interfaces;
-
-/// <summary>
-/// Interface du repository pour l'entité Sonde.
-/// Fournit les opérations CRUD et des méthodes de filtrage par localisation, type et statut actif.
-/// Toutes les méthodes de récupération incluent le eager loading de Localisation et UniteMesure.
-/// </summary>
-public interface ISondeRepository
+namespace Domain.Interfaces
 {
-    /// <summary>
-    /// Récupère une sonde par son identifiant.
-    /// Inclut le eager loading de Localisation et UniteMesure.
-    /// </summary>
-    /// <param name="id">Identifiant de la sonde.</param>
-    /// <returns>La sonde trouvée ou null si inexistante.</returns>
-    Task<Sonde?> GetByIdAsync(Guid id);
+    public interface ISondeRepository
+    {
+        Task<Sonde?> GetByIdAsync(Guid id);
 
-    /// <summary>
-    /// Récupère toutes les sondes.
-    /// Inclut le eager loading de Localisation et UniteMesure.
-    /// Triées par Nom.
-    /// </summary>
-    /// <returns>Liste de toutes les sondes.</returns>
-    Task<IEnumerable<Sonde>> GetAllAsync();
+        /// <summary>
+        /// Get a Sonde including relations (Localisation + UniteMesure)
+        /// </summary>
+        Task<Sonde?> GetByIdWithRelationsAsync(Guid id);
 
-    /// <summary>
-    /// Récupère toutes les sondes d'une localisation spécifique.
-    /// Inclut le eager loading de Localisation et UniteMesure.
-    /// Triées par Nom.
-    /// </summary>
-    /// <param name="localisationId">Identifiant de la localisation.</param>
-    /// <returns>Liste des sondes de cette localisation.</returns>
-    Task<IEnumerable<Sonde>> GetByLocalisationAsync(Guid localisationId);
+        Task<IEnumerable<Sonde>> GetAllAsync();
 
-    /// <summary>
-    /// Récupère toutes les sondes d'un type spécifique.
-    /// Inclut le eager loading de Localisation et UniteMesure.
-    /// Triées par Nom.
-    /// </summary>
-    /// <param name="type">Type de sonde à filtrer.</param>
-    /// <returns>Liste des sondes de ce type.</returns>
-    Task<IEnumerable<Sonde>> GetByTypeAsync(TypeSonde type);
+        /// <summary>
+        /// Get all sondes including relations
+        /// </summary>
+        Task<IEnumerable<Sonde>> GetAllWithRelationsAsync();
 
-    /// <summary>
-    /// Récupère toutes les sondes actives (EstActif = true).
-    /// Inclut le eager loading de Localisation et UniteMesure.
-    /// Triées par Nom.
-    /// </summary>
-    /// <returns>Liste des sondes actives.</returns>
-    Task<IEnumerable<Sonde>> GetActivesAsync();
+        Task<IEnumerable<Sonde>> GetByLocalisationAsync(Guid localisationId);
 
-    /// <summary>
-    /// Ajoute une nouvelle sonde en base de données.
-    /// L'Id, DateCreation et DateInstallation sont générés automatiquement si non fournis.
-    /// </summary>
-    /// <param name="sonde">La sonde à ajouter.</param>
-    /// <returns>La sonde créée avec Id, DateCreation et DateInstallation.</returns>
-    Task<Sonde> AddAsync(Sonde sonde);
+        /// <summary>
+        /// Get all sondes of a localisation including relations
+        /// </summary>
+        Task<IEnumerable<Sonde>> GetByLocalisationWithRelationsAsync(Guid localisationId);
 
-    /// <summary>
-    /// Met à jour une sonde existante.
-    /// </summary>
-    /// <param name="sonde">La sonde à mettre à jour.</param>
-    Task UpdateAsync(Sonde sonde);
+        Task<IEnumerable<Sonde>> GetByTypeAsync(TypeSonde type);
 
-    /// <summary>
-    /// Supprime une sonde par son identifiant.
-    /// </summary>
-    /// <param name="id">Identifiant de la sonde à supprimer.</param>
-    Task DeleteAsync(Guid id);
+        /// <summary>
+        /// Get all sondes of a type including relations
+        /// </summary>
+        Task<IEnumerable<Sonde>> GetByTypeWithRelationsAsync(TypeSonde type);
 
-    /// <summary>
-    /// Vérifie si une sonde existe.
-    /// </summary>
-    /// <param name="id">Identifiant de la sonde.</param>
-    /// <returns>True si la sonde existe, false sinon.</returns>
-    Task<bool> ExistsAsync(Guid id);
+        Task<IEnumerable<Sonde>> GetActivesAsync();
+
+        Task<Sonde> AddAsync(Sonde sonde);
+
+        Task UpdateAsync(Sonde sonde);
+
+        Task DeleteAsync(Sonde sonde);
+
+        Task DeleteAsync(Guid id);
+
+        Task<bool> ExistsAsync(Guid id);
+    }
 }

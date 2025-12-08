@@ -25,6 +25,7 @@ public class UserConfiguration : IEntityTypeConfiguration<User>
             .IsUnique()
             .HasDatabaseName("IX_Users_Username");
 
+
         // Configuration de Email
         // Requis, longueur maximale de 255 caractères, avec index unique pour garantir l'unicité
         builder.Property(u => u.Email)

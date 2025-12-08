@@ -33,6 +33,7 @@ public interface IUserRepository
     /// </summary>
     /// <returns>Collection de tous les utilisateurs.</returns>
     Task<IEnumerable<User>> GetAllAsync();
+    Task<IEnumerable<User>> SearchQuery(string query);
 
     /// <summary>
     /// Ajoute un nouvel utilisateur dans le système.

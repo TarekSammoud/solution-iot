@@ -61,6 +61,23 @@ public class UserRepository : IUserRepository
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<User>> SearchQuery(string query)
+    {
+        if (!String.IsNullOrEmpty(query))
+        {
+            return await _context.Users
+                .Where(u => u.Username.ToUpper().Contains(query.ToUpper()) || u.Email.ToUpper().Contains(query.ToUpper()))
+                .OrderBy(u => u.Username)
+                .ToListAsync(); 
+        }
+
+        else 
+            return await _context.Users
+                .OrderBy(u => u.Username)
+                .ToListAsync();
+
+    }
+
     /// <summary>
     /// Ajoute un nouvel utilisateur dans la base de données.
     /// Génère automatiquement un nouvel identifiant si nécessaire et définit la date de création.

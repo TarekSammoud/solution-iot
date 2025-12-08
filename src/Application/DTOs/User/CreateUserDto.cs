@@ -18,7 +18,7 @@ namespace Application.DTOs.User
         /// Nom d'utilisateur unique utilisé pour l'authentification.
         /// </summary>
         [Required(ErrorMessage = "Le Username est requis.")]
-        
+        [Length(1, 100, ErrorMessage = "Le Username doit contenir entre 3 et 50 caractères.")]
         public string Username { get; set; } = string.Empty;
 
         /// <summary>

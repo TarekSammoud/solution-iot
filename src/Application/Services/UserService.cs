@@ -59,6 +59,17 @@ namespace Application.Services
             return result;
         }
 
+        public async Task<IEnumerable<UserDto>> SearchQuery(string query)
+        {
+            /* var result = await _repository.GetAllAsync().
+                 .ContinueWith(users => _mapper.ToDtoList(users.Result));*/
+
+            var result = await _repository.SearchQuery(query)
+                .ContinueWith(users => _mapper.ToDtoList(users.Result));
+
+            return result;
+        }
+
         public async Task<UserDto?> GetByIdAsync(Guid id)
         {
             var user = await _repository.GetByIdAsync(id);

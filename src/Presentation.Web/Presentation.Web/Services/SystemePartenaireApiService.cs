@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.SystemePartenaire;
 using System.Net.Http.Json;
 
 namespace Presentation.Web.Services;

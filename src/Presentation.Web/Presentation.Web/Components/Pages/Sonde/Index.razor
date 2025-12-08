@@ -1,0 +1,92 @@
+@page "/sonde"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Localisation
+@using Application.DTOs.UniteMesure
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject SondeApiService ApiService
+@inject LocalisationApiService LocalisationService
+@inject UniteMesureApiService UniteMesureService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<h3>Sondes</h3>
+
+<div class="filters mb-3">
+    <select @bind="selectedTypeSonde" class="form-select w-auto me-2">
+        <option value="">Tous les types</option>
+        @foreach (var type in Enum.GetValues<TypeSonde>())
+        {
+            <option value="@type">@type</option>
+        }
+    </select>
+
+    <select @bind="selectedLocalisationId" class="form-select w-auto me-2">
+        <option value="">Toutes les localisations</option>
+        @foreach (var loc in localisations)
+        {
+            <option value="@loc.Id">@loc.Nom</option>
+        }
+    </select>
+
+    <label class="form-check-label me-2">
+        <input type="checkbox" @bind="activesOnly" class="form-check-input me-1" /> Actives uniquement
+    </label>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Type</th>
+            <th>Localisation</th>
+            <th>Unité</th>
+            <th>Statut</th>
+            <th>Date Installation</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var s in sondesFiltrees)
+        {
+            <tr>
+                <td>@s.Nom</td>
+                <td>@s.TypeSonde</td>
+                <td>@s.LocalisationNom</td>
+                <td>@s.UniteMesureSymbole</td>
+                <td>
+                    <span class="badge @(s.EstActif ? "bg-success" : "bg-secondary")">
+                        @(s.EstActif ? "Actif" : "Inactif")
+                    </span>
+                </td>
+                <td>@s.DateInstallation.ToShortDateString()</td>
+                <td>
+                    <a class="btn btn-sm btn-info me-1" href="@($"/sonde/details/{s.Id}")">Details</a>
+                    <a class="btn btn-sm btn-warning me-1" href="@($"/sonde/edit/{s.Id}")">Edit</a>
+                    <a class="btn btn-sm btn-danger" href="@($"/sonde/delete/{s.Id}")">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-primary" href="/sonde/create">Créer une sonde</a>
+
+@code {
+    private IEnumerable<SondeDto> sondes = new List<SondeDto>();
+    private IEnumerable<LocalisationDto> localisations = new List<LocalisationDto>();
+    private string selectedTypeSonde = "";
+    private Guid? selectedLocalisationId = null;
+    private bool activesOnly = false;
+
+    private IEnumerable<SondeDto> sondesFiltrees => sondes
+        .Where(s => (string.IsNullOrEmpty(selectedTypeSonde) || s.TypeSonde.ToString() == selectedTypeSonde)
+                    && (!selectedLocalisationId.HasValue || s.LocalisationId == selectedLocalisationId.Value)
+                    && (!activesOnly || s.EstActif));
+
+    protected override async Task OnInitializedAsync()
+    {
+        sondes = await ApiService.GetAllAsync();
+        localisations = await LocalisationService.GetAllAsync();
+    }
+}

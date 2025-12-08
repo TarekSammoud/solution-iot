@@ -20,6 +20,7 @@ namespace Application.Services.Interfaces
         /// </summary>
         /// <returns>Une collection de DTOs de toutes les utilisateurs.</returns>
         Task<IEnumerable<UserDto>> GetAllAsync();
+        Task<IEnumerable<UserDto>> SearchQuery(string query);
 
 
         /// <summary>

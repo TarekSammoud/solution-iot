@@ -24,10 +24,16 @@ namespace Presentation.API.Controllers
         /// <response code="200">Retourne la liste des utilisateurs.</response>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<ActionResult<IEnumerable<UserDto>>> GetAll()
+        public async Task<ActionResult<IEnumerable<UserDto>>> GetAll([FromQuery] string? searchString = null)
         {
-            var users = await _userService.GetAllAsync();
-            return Ok(users);
+
+            var filteredUsers = await _userService.SearchQuery(searchString);
+
+            return Ok(filteredUsers);
+            
+
+          /*  var users = await _userService.GetAllAsync();
+            return Ok(users);*/
         }
 
         [HttpGet("{id}")]
