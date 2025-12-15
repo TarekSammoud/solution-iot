@@ -1,5 +1,7 @@
 using Application.DTOs.Releve;
 using Application.Services.Interfaces;
+using Domain.Enums;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.API.Controllers;
@@ -30,10 +32,10 @@ public class RelevesController : ControllerBase
     /// <response code="200">Retourne la liste des Releves.</response>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<ActionResult<IEnumerable<ReleveDto>>> GetAll([FromQuery(Name = "limit")] int limit = int.MaxValue, [FromQuery(Name = "page")] int page = 0  )
+    public async Task<ActionResult<RelevePageDto>> GetAll([FromQuery(Name = "limit")] int limit = int.MaxValue, [FromQuery(Name = "page")] int page = 0, [FromQuery(Name = "type")] TypeReleve? type = null,[FromQuery(Name= "startDate")] DateTime? startDate = null, [FromQuery(Name= "endDate")] DateTime? endDate = null)
     {
-        var Releves = await _service.GetAllAsync() ;
-        return Ok(Releves.Skip(page*limit).Take(limit));
+        RelevePageDto RelevePageDto = await _service.GetAllAsync(page, limit, type, startDate, endDate) ;
+        return Ok(RelevePageDto);
     }
 
     /// <summary>
@@ -109,7 +111,7 @@ public class RelevesController : ControllerBase
     /// </summary>
     /// <returns>Liste de toutes les Releves.</returns>
     /// <response code="200">Retourne la liste des Releves.</response>
-    [HttpGet("/sonde/{id}")]
+    [HttpGet("sonde/{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ReleveDto>>> GetBySondeAsync(Guid id)
     {
@@ -121,12 +123,30 @@ public class RelevesController : ControllerBase
     /// </summary>
     /// <returns>Liste de toutes les Releves.</returns>
     /// <response code="200">Retourne la liste des Releves.</response>
-    [HttpGet("/sonde/{id}/recent")]
+    [HttpGet("sonde/{id}/recent")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<ActionResult<IEnumerable<ReleveDto>>> GetRecentBySondeAsync(Guid id,
         [FromQuery(Name = "n")] int n =10)
     {
         var Releves = await _service.GetRecentBySondeAync(id,n);
+        return Ok(Releves);
+    }
+
+    /// <summary>
+    /// Récupère les relevés d'une sonde dans une plage de dates spécifique.
+    /// </summary>
+    /// <param name="id">L'identifiant de la sonde.</param>
+    /// <param name="startDate">Date de début de la plage.</param>
+    /// <param name="endDate">Date de fin de la plage.</param>
+    /// <returns>Liste des relevés dans la plage de dates.</returns>
+    /// <response code="200">Retourne la liste des relevés.</response>
+    [HttpGet("sonde/{id}/daterange")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IEnumerable<ReleveDto>>> GetBySondeDateRangeAsync(Guid id,
+        [FromQuery(Name = "startDate")] DateTime startDate,
+        [FromQuery(Name = "endDate")] DateTime endDate)
+    {
+        var Releves = await _service.GetBySondeDateRangeAync(id, startDate, endDate);
         return Ok(Releves);
     }
 

@@ -21,6 +21,11 @@ public interface IReleveRepository
     /// </summary>
     /// <returns>Collection de tous les relevés.</returns>
     Task<IEnumerable<Releve>> GetAllAsync();
+    /// <summary>
+    /// Récupère toutes les Releves par filtres.
+    /// </summary>
+    /// <returns>Collection de tous les relevés.</returns>
+    Task<IEnumerable<Releve>> GetAllAsync(int page = 0, int limit = 50, TypeReleve? type = null, DateTime? StartDate = null, DateTime? EndDate = null);
 
     /// <summary>
     /// Ajoute un nouveau relevé dans la base de données.
@@ -77,4 +82,6 @@ public interface IReleveRepository
     /// <param name="sondeId">Identifiant de la sonde.</param>
     /// <returns>Nombre de relevés de la sonde.</returns>
     Task<int> CountBySondeAsync(Guid sondeId);
+    Task<int> CountRelevesAsync(TypeReleve? type = null, DateTime? StartDate = null, DateTime? EndDate = null);
+    
 }
