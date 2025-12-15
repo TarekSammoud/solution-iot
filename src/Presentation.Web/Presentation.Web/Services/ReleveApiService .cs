@@ -1,4 +1,5 @@
 using Application.DTOs.Releve;
+using Domain.Enums;
 using System.Net.Http.Json;
 
 namespace Presentation.Web.Services;
@@ -25,10 +26,10 @@ public class ReleveApiService
     /// Récupère toutes les Releves depuis l'API.
     /// </summary>
     /// <returns>Une liste de toutes les Releves, ou une liste vide si aucune.</returns>
-    public async Task<List<ReleveDto>> GetAllAsync(int page = 0, int limit = int.MaxValue)
+    public async Task<RelevePageDto> GetAllAsync(int page = 0, int limit = int.MaxValue,TypeReleve? type = null, DateTime? startDate = null, DateTime? endDate = null)
     {
-        return await _httpClient.GetFromJsonAsync<List<ReleveDto>>($"{ApiBaseUrl}?page={page}&limit={limit}")
-            ?? new List<ReleveDto>();
+        return await _httpClient.GetFromJsonAsync<RelevePageDto>($"{ApiBaseUrl}?page={page}&limit={limit}&type={type}&startDate={startDate}&endDate={endDate}")
+            ?? new RelevePageDto();
     }
 
     /// <summary>
@@ -61,6 +62,18 @@ public class ReleveApiService
     public async Task<List<ReleveDto>> GetRecentBySondeAsync(Guid idSonde,int n = 5)
     {
         return await _httpClient.GetFromJsonAsync<List<ReleveDto>>($"{ApiBaseUrl}/sonde/{idSonde}/recent?n={n}");
+    }
+
+    /// <summary>
+    /// Récupère les relevés d'une sonde dans une plage de dates spécifique.
+    /// </summary>
+    /// <param name="idSonde">L'identifiant de la sonde.</param>
+    /// <param name="startDate">Date de début de la plage.</param>
+    /// <param name="endDate">Date de fin de la plage.</param>
+    /// <returns>Liste des relevés dans la plage de dates.</returns>
+    public async Task<List<ReleveDto>> GetBySondeDateRangeAsync(Guid idSonde, DateTime startDate, DateTime endDate)
+    {
+        return await _httpClient.GetFromJsonAsync<List<ReleveDto>>($"{ApiBaseUrl}/sonde/{idSonde}/daterange?startDate={startDate:yyyy-MM-ddTHH:mm:ss}&endDate={endDate:yyyy-MM-ddTHH:mm:ss}");
     }
 
 

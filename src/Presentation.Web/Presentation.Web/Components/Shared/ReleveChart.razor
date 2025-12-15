@@ -1,0 +1,223 @@
+@using Application.DTOs.Releve
+@using Application.DTOs.Sonde
+@inject IJSRuntime JSRuntime
+
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h5 class="card-title mb-0">
+            <span class="oi oi-graph" aria-hidden="true"></span> Évolution des valeurs
+        </h5>
+    </div>
+    <div class="card-body">
+        <canvas id="releveChart" width="400" height="200"></canvas>
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ReleveDto> Releves { get; set; } = new();
+    [Parameter] public SondeDto? Sonde { get; set; }
+    [Parameter] public decimal? ValeurMin { get; set; }
+    [Parameter] public decimal? ValeurMax { get; set; }
+
+    private IJSObjectReference? chartModule;
+    private IJSObjectReference? chartInstance;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && Releves.Any())
+        {
+            await LoadChart();
+        }
+    }
+
+    private async Task LoadChart()
+    {
+        try
+        {
+            // Charger le module Chart.js
+            chartModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/chart.js");
+            
+            if (chartModule != null)
+            {
+                // Préparer les données
+                var labels = Releves.Select(r => r.DateHeure.ToString("dd/MM/yyyy HH:mm")).ToArray();
+                var data = Releves.Select(r => (double)r.Valeur).ToArray();
+                
+                // Créer le graphique
+                var config = new
+                {
+                    type = "line",
+                    data = new
+                    {
+                        labels = labels,
+                        datasets = new[]
+                        {
+                            new
+                            {
+                                label = $"Valeurs ({Sonde?.UniteMesureSymbole ?? "Unité"})",
+                                data = data,
+                                borderColor = "#0d6efd",
+                                backgroundColor = "rgba(13, 110, 253, 0.1)",
+                                borderWidth = 2,
+                                tension = 0.1,
+                                fill = true,
+                                pointBackgroundColor = "#0d6efd",
+                                pointBorderColor = "#fff",
+                                pointBorderWidth = 2,
+                                pointRadius = 4,
+                                pointHoverRadius = 6
+                            }
+                        }
+                    },
+                    options = new
+                    {
+                        responsive = true,
+                        maintainAspectRatio = false,
+                        plugins = new
+                        {
+                            title = new
+                            {
+                                display = true,
+                                text = $"Évolution des relevés - {Sonde?.Nom ?? "Sonde"}",
+                                font = new { size = 16, weight = "bold" }
+                            },
+                            legend = new
+                            {
+                                display = true,
+                                position = "top",
+                                labels = new
+                                {
+                                    usePointStyle = true,
+                                    padding = 20,
+                                    font = new { size = 12 }
+                                }
+                            }
+                        },
+                        scales = new
+                        {
+                            x = new
+                            {
+                                display = true,
+                                title = new
+                                {
+                                    display = true,
+                                    text = "Date et Heure",
+                                    font = new { size = 14, weight = "bold" }
+                                },
+                                grid = new
+                                {
+                                    display = true,
+                                    color = "rgba(0,0,0,0.1)"
+                                }
+                            },
+                            y = new
+                            {
+                                display = true,
+                                title = new
+                                {
+                                    display = true,
+                                    text = $"Valeur ({Sonde?.UniteMesureSymbole ?? "Unité"})",
+                                    font = new { size = 14, weight = "bold" }
+                                },
+                                grid = new
+                                {
+                                    display = true,
+                                    color = "rgba(0,0,0,0.1)"
+                                },
+                                min = GetChartMin(),
+                                max = GetChartMax()
+                            }
+                        }
+                    }
+                };
+
+                // Ajouter les lignes de seuil si disponibles
+                var datasets = new List<object> { config.data.datasets[0] };
+                
+                if (ValeurMin.HasValue)
+                {
+                    datasets.Add(new
+                    {
+                        label = $"Seuil Min ({ValeurMin.Value})",
+                        data = Enumerable.Repeat((double)ValeurMin.Value, labels.Length).ToArray(),
+                        borderColor = "#dc3545",
+                        backgroundColor = "rgba(220, 53, 69, 0.1)",
+                        borderWidth = 3,
+                        borderDash = new int[] { 10, 5 },
+                        fill = false,
+                        pointRadius = 0,
+                        pointHoverRadius = 0
+                    });
+                }
+                
+                if (ValeurMax.HasValue)
+                {
+                    datasets.Add(new
+                    {
+                        label = $"Seuil Max ({ValeurMax.Value})",
+                        data = Enumerable.Repeat((double)ValeurMax.Value, labels.Length).ToArray(),
+                        borderColor = "#fd7e14",
+                        backgroundColor = "rgba(253, 126, 20, 0.1)",
+                        borderWidth = 3,
+                        borderDash = new int[] { 10, 5 },
+                        fill = false,
+                        pointRadius = 0,
+                        pointHoverRadius = 0
+                    });
+                }
+                
+                // Créer une nouvelle configuration avec tous les datasets
+                var updatedConfig = new
+                {
+                    type = config.type,
+                    data = new
+                    {
+                        labels,
+                        datasets = datasets.ToArray()
+                    },
+                    options = config.options
+                };
+                
+                chartInstance = await chartModule.InvokeAsync<IJSObjectReference>("createChart", "releveChart", updatedConfig);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement du graphique: {ex.Message}");
+        }
+    }
+
+    private double GetChartMin()
+    {
+        if (!Releves.Any()) return 0;
+        
+        var minValue = (double)Releves.Min(r => r.Valeur);
+        var minThreshold = ValeurMin.HasValue ? (double)ValeurMin.Value : minValue;
+        
+        return Math.Min(minValue, minThreshold) * 0.95; // 5% de marge
+    }
+
+    private double GetChartMax()
+    {
+        if (!Releves.Any()) return 100;
+        
+        var maxValue = (double)Releves.Max(r => r.Valeur);
+        var maxThreshold = ValeurMax.HasValue ? (double)ValeurMax.Value : maxValue;
+        
+        return Math.Max(maxValue, maxThreshold) * 1.05; // 5% de marge
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (chartInstance != null)
+        {
+            await chartInstance.InvokeVoidAsync("destroy");
+            await chartInstance.DisposeAsync();
+        }
+        
+        if (chartModule != null)
+        {
+            await chartModule.DisposeAsync();
+        }
+    }
+}

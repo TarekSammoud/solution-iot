@@ -1,96 +1,284 @@
 @page "/releves"
 @using Application.DTOs.Releve
 @using Application.DTOs.Sonde
-@using Application.DTOs.Releve
 @using System.Threading.Tasks
 @inject ReleveApiService ApiService
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-primary">
+            <span class="oi oi-list" aria-hidden="true"></span> Gestion des Relevés
+        </h2>
+        <div class="btn-group" role="group">
+            <button class="btn btn-outline-primary" @onclick="NavigateToBySonde">
+                <span class="oi oi-graph" aria-hidden="true"></span> Par Sonde
+            </button>
+            <button class="btn btn-primary" @onclick="NavigateToCreate">
+                <span class="oi oi-plus" aria-hidden="true"></span> Nouvelle localisation
+            </button>
+        </div>
+    </div>
 
-<div class="mb-3">
-    <button class="btn btn-primary" @onclick="NavigateToCreate">
-        <span class="oi oi-plus" aria-hidden="true"></span> Nouvelle localisation
-    </button>
-</div>
+    <!-- Filters Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <span class="oi oi-funnel" aria-hidden="true"></span> Filtres
+            </h5>
+            @if (typeReleve.HasValue || startDate.HasValue || endDate.HasValue)
+            {
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearFilters">
+                    <span class="oi oi-x" aria-hidden="true"></span> Effacer
+                </button>
+            }
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-3">
+                    <label for="typeReleve" class="form-label fw-semibold">Type de relevé</label>
+                    <select @bind="typeReleve" class="form-select" id="typeReleve">
+                        <option value="">Tous les types</option>
+                        @foreach (var type in Enum.GetValues<TypeReleve>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </select>
+                </div>
 
-<table class="table table-striped table-hover">
-    <thead>
-        <tr>
-            <th>Sonde</th>
-            <th>Valeur</th>
-            <th>Date Heure</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var releve in releves)
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label fw-semibold">Date de début</label>
+                    <input type="datetime-local" @bind="startDate" class="form-control" id="startDate" />
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label fw-semibold">Date de fin</label>
+                    <input type="datetime-local" @bind="endDate" class="form-control" id="endDate" />
+                </div>
+
+                <div class="col-md-3">
+                    <button class="btn btn-primary w-100" @onclick="ApplyFilters" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Chargement...</span>
+                        }
+                        else
+                        {
+                            <span class="oi oi-check" aria-hidden="true"></span>
+                            <span>Appliquer les filtres</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <span class="oi oi-spreadsheet" aria-hidden="true"></span> Relevés
+            </h5>
+            <span class="badge bg-secondary">@relevesPage.total relevés trouvés</span>
+        </div>
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="text-muted mt-3">Chargement des relevés...</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="">
+                            <tr>
+                                <th scope="col">Sonde</th>
+                                <th scope="col">Valeur</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Date Heure</th>
+                                <th scope="col" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (relevesPage.releves?.Any() == true)
+                            {
+                                @foreach (var releve in relevesPage.releves)
+                                {
+                                    var releveId = releve.Id;
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold">@releve.Sonde.Nom</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">@releve.Valeur</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@releve.TypeReleve</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <span class="oi oi-clock" aria-hidden="true"></span>
+                                                @releve.DateHeure.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                
+                                                <button class="btn btn-sm btn-danger" @onclick="() => NavigateToDelete(releveId)" title="Supprimer">
+                                                    Delete
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <span class="oi oi-ban" style="font-size: 2rem;" aria-hidden="true"></span>
+                                            <p class="mt-2 mb-0">Aucun relevé trouvé</p>
+                                            <small>Essayez de modifier vos filtres</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+        
+        <!-- Pagination Footer -->
+        @if (relevesPage.releves?.Any() == true)
         {
-            var releveId = releve.Id;
-            <tr>
-                <td>@releve.Sonde.Nom</td>
-                <td>@releve.Valeur</td>
-                <td>@releve.DateHeure.ToString("dd/MM/yyyy HH:mm")</td>
-                <td>
-                    <a href="/releves/edit/@releveId" class="btn btn-sm btn-warning">
-                        <span class="oi oi-pencil" aria-hidden="true"></span> Modifier
-                    </a>
-                    <a href="/releves/delete/@releveId" class="btn btn-sm btn-danger ms-2">
-                        <span class="oi oi-trash" aria-hidden="true"></span> Supprimer
-                    </a>
-                </td>
-            </tr>
+            <div class="card-footer bg-light">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="pageSize" class="form-label mb-0">Afficher</label>
+                            <select @onchange="OnLimitChange" class="form-select form-select-sm" id="pageSize" style="width: auto;">
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                            </select>
+                            <span class="text-muted">éléments par page</span>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <nav aria-label="Pagination">
+                            <ul class="pagination pagination-sm justify-content-end mb-0">
+                                <li class="page-item @(currentPage == 0 ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => Paginate(-1)" disabled="@((currentPage == 0))">
+                                        Prev
+                                    </button>
+                                </li>
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">@(currentPage + 1)</span>
+                                </li>
+                                
+                                <li class="page-item @(((currentPage + 1) * limit >= relevesPage.total) ? "disabled" : "")">
+                                    <button class="page-link" @onclick="() => Paginate(1)" disabled="@(((currentPage + 1) * limit >= relevesPage.total))">
+Next                                    </button>
+                                </li>
+                            </ul>
+                        </nav>
+                    </div>
+                </div>
+            </div>
         }
-    </tbody>
-    <tfoot class="my-2">
-        <button class="btn btn-primary mx-1" @onclick=" ()=>Paginate(-1)">prev</button>
-        <button class="btn btn-outline-primary" >@currentPage</button    
-        <button class="btn btn-primary mx-1" @onclick="()=>Paginate(1)">next</button>
-    </tfoot>
-</table>
+    </div>
+</div>
 
 
 
 @code{
-    List<ReleveDto> releves = new();
-    int currentPage = 0;
-    int limit = 5;
+    RelevePageDto relevesPage = new() { releves = new List<ReleveDto>(), total = 0 };
+    private int currentPage = 0;
+    private int limit = 10;
+    private TypeReleve? typeReleve;
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private bool isLoading = false;
+
     protected override async Task OnInitializedAsync()
     {
-        releves = await ApiService.GetAllAsync(currentPage ,limit);
+        await LoadData();
     }
-    private async Task Paginate(int x)
+
+    private async Task Paginate(int direction)
     {
-        if (currentPage+x >=0)    
-        {    
-            currentPage += x;
-            await OnInitializedAsync();
+        var newPage = currentPage + direction;
+        if (newPage >= 0 && newPage * limit < relevesPage.total)
+        {
+            currentPage = newPage;
+            await LoadData();
         }
     }
-      /// <summary>
-    /// Navigue vers la page de cr�ation d'une nouvelle localisation.
-    /// </summary>
+
     private void NavigateToCreate()
     {
         Navigation.NavigateTo("/releves/create");
     }
 
-    /// <summary>
-    /// Navigue vers la page d'�dition d'une localisation.
-    /// </summary>
-    /// <param name="id">L'identifiant de la localisation � modifier.</param>
-    private void NavigateToEdit(Guid id)
+    private void NavigateToBySonde()
     {
+        Navigation.NavigateTo("/releves/bysonde");
     }
 
-    /// <summary>
-    /// Navigue vers la page de suppression d'une localisation.
-    /// </summary>
-    /// <param name="id">L'identifiant de la localisation � supprimer.</param>
+    private async Task LoadData()
+    {
+        isLoading = true;
+        try
+        {
+            relevesPage = await ApiService.GetAllAsync(currentPage, limit, typeReleve, startDate ?? DateTime.MinValue, endDate ?? DateTime.MaxValue);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        currentPage = 0;
+        await LoadData();        
+    }
+
+    private async Task ClearFilters()
+    {
+        typeReleve = null;
+        startDate = null;
+        endDate = null;
+        currentPage = 0;
+        await LoadData();
+    }
+
+    private async Task OnLimitChange(ChangeEventArgs e)
+    {
+        if (int.TryParse(e.Value?.ToString(), out int newLimit))
+        {
+            limit = newLimit;
+            currentPage = 0;
+            await LoadData();
+        }
+    }
+
     private void NavigateToDelete(Guid id)
     {
+        Navigation.NavigateTo($"/releves/delete/{id}");
     }
-
 }
 
 

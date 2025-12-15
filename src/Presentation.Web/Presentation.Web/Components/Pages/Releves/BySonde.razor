@@ -1,0 +1,439 @@
+@page "/releves/bysonde"
+@using Application.DTOs.Releve
+@using Application.DTOs.Sonde
+@using Presentation.Web.Services
+@inject ReleveApiService ApiService
+@inject SondeApiService SondeApiService
+@inject NavigationManager Navigation
+@inject IJSRuntime JSRuntime
+@rendermode InteractiveServer
+
+
+<div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="h4 mb-0 text-primary">
+            <span class="oi oi-graph" aria-hidden="true"></span> Relevés par Sonde
+        </h2>
+        <button class="btn btn-secondary" @onclick="NavigateToIndex">
+            <span class="oi oi-arrow-left" aria-hidden="true"></span> Retour à la liste
+        </button>
+    </div>
+
+    <!-- Filters Card -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <span class="oi oi-funnel" aria-hidden="true"></span> Filtres par Sonde et Plage de Dates
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3 align-items-end">
+                <div class="col-md-4">
+                    <label for="sondeSelect" class="form-label fw-semibold">Sonde <span class="text-danger">*</span></label>
+                    <select @bind="selectedSondeId" class="form-select" id="sondeSelect">
+                        <option value="">Sélectionner une sonde...</option>
+                        @foreach (var sonde in sondes)
+                        {
+                            <option value="@sonde.Id">@sonde.Nom</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="startDate" class="form-label fw-semibold">Date de début <span class="text-danger">*</span></label>
+                    <input type="datetime-local" @bind="startDate" class="form-control" id="startDate" />
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="endDate" class="form-label fw-semibold">Date de fin <span class="text-danger">*</span></label>
+                    <input type="datetime-local" @bind="endDate" class="form-control" id="endDate" />
+                </div>
+
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100" @onclick="LoadRelevesBySonde" disabled="@isLoading">
+                        @if (isLoading)
+                        {
+                            <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            <span>Chargement...</span>
+                        }
+                        else
+                        {
+                            <span class="oi oi-magnifying-glass" aria-hidden="true"></span>
+                            <span>Rechercher</span>
+                        }
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chart Card -->
+@if (releves?.Any() == true && selectedSonde != null)
+{
+    <div class="card shadow-sm mb-4">
+        <div class="card-header bg-light">
+            <h5 class="card-title mb-0">
+                <span class="oi oi-graph" aria-hidden="true"></span> Évolution des valeurs
+            </h5>
+        </div>
+        <div class="card-body">
+            <canvas id="releveChart" width="800" height="400"></canvas>
+        </div>
+    </div>
+}
+
+<!-- Results Card -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">
+                <span class="oi oi-spreadsheet" aria-hidden="true"></span> Relevés
+            </h5>
+            @if (releves?.Any() == true)
+            {
+                <span class="badge bg-secondary">@releves.Count relevés trouvés</span>
+            }
+        </div>
+        <div class="card-body p-0">
+            @if (isLoading)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Chargement...</span>
+                    </div>
+                    <p class="text-muted mt-3">Chargement des relevés...</p>
+                </div>
+            }
+            else if (releves != null)
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th scope="col">Sonde</th>
+                                <th scope="col">Valeur</th>
+                                <th scope="col">Type</th>
+                                <th scope="col">Date Heure</th>
+                                <th scope="col" class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (releves.Any())
+                            {
+                                @foreach (var releve in releves)
+                                {
+                                    <tr>
+                                        <td>
+                                            <span class="fw-semibold">@releve.Sonde?.Nom</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-primary">@releve.Valeur</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@releve.TypeReleve</span>
+                                        </td>
+                                        <td>
+                                            <small class="text-muted">
+                                                <span class="oi oi-clock" aria-hidden="true"></span>
+                                                @releve.DateHeure.ToString("dd/MM/yyyy HH:mm")
+                                            </small>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <a href="/releves/delete/@releve.Id" class="btn btn-outline-danger" title="Supprimer">
+                                                    supprimer
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="text-muted">
+                                            <span class="oi oi-ban" style="font-size: 2rem;" aria-hidden="true"></span>
+                                            <p class="mt-2 mb-0">Aucun relevé trouvé</p>
+                                            <small>Essayez de modifier vos filtres</small>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<ReleveDto> releves = new();
+    private List<SondeDto> sondes = new();
+    private SondeDto? selectedSonde;
+    private Guid? selectedSondeId;
+    private DateTime? startDate;
+    private DateTime? endDate;
+    private bool isLoading = false;
+    private IJSObjectReference? chartInstance;
+    private IJSObjectReference? chartModule;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSondes();
+        // Set default date range to last year
+        endDate = DateTime.Now;
+        startDate = DateTime.Now.AddYears(-1);
+    }
+
+    private async Task LoadSondes()
+    {
+        try
+        {
+            sondes = (await SondeApiService.GetAllAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des sondes: {ex.Message}");
+            sondes = new();
+        }
+    }
+
+    private async Task LoadRelevesBySonde()
+    {
+        if (!selectedSondeId.HasValue || !startDate.HasValue || !endDate.HasValue)
+        {
+            return;
+        }
+
+        isLoading = true;
+        StateHasChanged(); // Forcer le rafraîchissement de l'UI
+        
+        try
+        {
+            // Charger la sonde sélectionnée
+            selectedSonde = sondes.FirstOrDefault(s => s.Id == selectedSondeId.Value);
+            
+            // Charger les relevés
+            releves = await ApiService.GetBySondeDateRangeAsync(selectedSondeId.Value, startDate.Value, endDate.Value);
+            
+            // Attendre que le DOM soit complètement mis à jour
+            await Task.Delay(300);
+            
+            // Détruire l'ancien graphique s'il existe
+            await DestroyChart();
+            
+            // Créer le nouveau graphique
+            if (releves.Any() && selectedSonde != null)
+            {
+                await CreateChart();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des relevés: {ex.Message}");
+            releves = new();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task CreateChart()
+    {
+        try
+        {
+            // Vérifier que le canvas existe dans le DOM
+            var canvasExists = await JSRuntime.InvokeAsync<bool>("eval", "document.getElementById('releveChart') !== null");
+            if (!canvasExists)
+            {
+                Console.WriteLine("Canvas non trouvé, attente...");
+                await Task.Delay(500); // Attendre plus longtemps
+            }
+            
+            chartModule = await JSRuntime.InvokeAsync<IJSObjectReference>("import", "./js/chart.js");
+            
+            if (chartModule != null && releves.Any() && selectedSonde != null)
+            {
+                // Préparer les données
+                var labels = releves.Select(r => r.DateHeure.ToString("dd/MM/yyyy HH:mm")).ToArray();
+                var data = releves.Select(r => (double)r.Valeur).ToArray();
+                
+                // Créer la configuration du graphique
+                var config = new
+                {
+                    type = "line",
+                    data = new
+                    {
+                        labels = labels,
+                        datasets = new object[]
+                        {
+                            new
+                            {
+                                label = $"Valeurs ({selectedSonde.UniteMesureSymbole})",
+                                data = data,
+                                borderColor = "rgb(75, 192, 192)",
+                                backgroundColor = "rgba(75, 192, 192, 0.2)",
+                                tension = 0.1,
+                                fill = false
+                            }
+                        }
+                    },
+                    options = new
+                    {
+                        responsive = true,
+                        maintainAspectRatio = false,
+                        plugins = new
+                        {
+                            title = new
+                            {
+                                display = true,
+                                text = $"Évolution des relevés - {selectedSonde.Nom}"
+                            },
+                            legend = new
+                            {
+                                display = true,
+                                position = "top"
+                            }
+                        },
+                        scales = new
+                        {
+                            x = new
+                            {
+                                display = true,
+                                title = new
+                                {
+                                    display = true,
+                                    text = "Date et Heure"
+                                }
+                            },
+                            y = new
+                            {
+                                display = true,
+                                title = new
+                                {
+                                    display = true,
+                                    text = $"Valeur ({selectedSonde.UniteMesureSymbole})"
+                                },
+                                min = GetChartMin(),
+                                max = GetChartMax()
+                            }
+                        }
+                    }
+                };
+                
+                // Ajouter les lignes de seuil si disponibles
+                var datasets = new List<object> { config.data.datasets[0] };
+                
+                if (selectedSonde.ValeurMin.HasValue)
+                {
+                    datasets.Add(new
+                    {
+                        label = "Seuil Min",
+                        data = Enumerable.Repeat((double)selectedSonde.ValeurMin.Value, labels.Length).ToArray(),
+                        borderColor = "rgb(255, 99, 132)",
+                        backgroundColor = "rgba(255, 99, 132, 0.2)",
+                        borderDash = new int[] { 5, 5 },
+                        fill = false,
+                        pointRadius = 0
+                    });
+                }
+                
+                if (selectedSonde.ValeurMax.HasValue)
+                {
+                    datasets.Add(new
+                    {
+                        label = "Seuil Max",
+                        data = Enumerable.Repeat((double)selectedSonde.ValeurMax.Value, labels.Length).ToArray(),
+                        borderColor = "rgb(255, 159, 64)",
+                        backgroundColor = "rgba(255, 159, 64, 0.2)",
+                        borderDash = new int[] { 5, 5 },
+                        fill = false,
+                        pointRadius = 0
+                    });
+                }
+                
+                // Mettre à jour la configuration avec tous les datasets
+                var updatedConfig = new
+                {
+                    config.type,
+                    data = new
+                    {
+                        labels,
+                        datasets = datasets.ToArray()
+                    },
+                    config.options
+                };
+                
+                chartInstance = await chartModule.InvokeAsync<IJSObjectReference>("createChart", "releveChart", updatedConfig);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la création du graphique: {ex.Message}");
+        }
+    }
+
+    private async Task DestroyChart()
+    {
+        try
+        {
+            if (chartModule != null)
+            {
+                await chartModule.InvokeVoidAsync("destroyChart", "releveChart");
+            }
+            if (chartInstance != null)
+            {
+                await chartInstance.DisposeAsync();
+                chartInstance = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la destruction du graphique: {ex.Message}");
+        }
+    }
+
+    private double GetChartMin()
+    {
+        if (!releves.Any()) return 0;
+        
+        var minValue = (double)releves.Min(r => r.Valeur);
+        var minThreshold = selectedSonde?.ValeurMin.HasValue == true ? (double)selectedSonde.ValeurMin.Value : minValue;
+        
+        return Math.Min(minValue, minThreshold) * 0.95; // 5% de marge
+    }
+
+    private double GetChartMax()
+    {
+        if (!releves.Any()) return 100;
+        
+        var maxValue = (double)releves.Max(r => r.Valeur);
+        var maxThreshold = selectedSonde?.ValeurMax.HasValue == true ? (double)selectedSonde.ValeurMax.Value : maxValue;
+        
+        return Math.Max(maxValue, maxThreshold) * 1.05; // 5% de marge
+    }
+
+    private void NavigateToIndex()
+    {
+        Navigation.NavigateTo("/releves");
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await DestroyChart();
+            if (chartModule != null)
+            {
+                await chartModule.DisposeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la disposal: {ex.Message}");
+        }
+    }
+}

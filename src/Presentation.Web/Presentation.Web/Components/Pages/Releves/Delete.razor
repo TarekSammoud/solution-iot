@@ -1,0 +1,160 @@
+@page "/releves/delete/{id:guid}"
+@using Application.DTOs.Releve
+@inject ReleveApiService ApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Supprimer un Relevé</PageTitle>
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow">
+                <div class="card-header bg-danger text-white">
+                    <h3 class="card-title mb-0">
+                        <span class="oi oi-trash" aria-hidden="true"></span> Confirmer la suppression
+                    </h3>
+                </div>
+                <div class="card-body">
+                    @if (releve == null)
+                    {
+                        <div class="text-center">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Chargement...</span>
+                            </div>
+                            <p class="mt-2">Chargement des détails du relevé...</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-warning" role="alert">
+                            <h5 class="alert-heading">
+                                <span class="oi oi-warning" aria-hidden="true"></span> Attention!
+                            </h5>
+                            <p>Êtes-vous sûr de vouloir supprimer ce relevé ? Cette action est irréversible.</p>
+                        </div>
+
+                        <div class="card border-0 bg-light">
+                            <div class="card-body">
+                                <h5 class="card-title text-primary">Détails du relevé</h5>
+                                <hr />
+                                
+                                <dl class="row">
+                                    <dt class="col-sm-4">ID :</dt>
+                                    <dd class="col-sm-8">@releve.Id</dd>
+
+                                    <dt class="col-sm-4">Sonde :</dt>
+                                    <dd class="col-sm-8">
+                                        @if (releve.Sonde != null)
+                                        {
+                                            <span class="badge bg-info">@releve.Sonde.Nom</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">Aucune sonde associée</span>
+                                        }
+                                    </dd>
+
+                                    <dt class="col-sm-4">Type :</dt>
+                                    <dd class="col-sm-8">
+                                        <span class="badge bg-secondary">@releve.TypeReleve</span>
+                                    </dd>
+
+                                    <dt class="col-sm-4">Date et heure :</dt>
+                                    <dd class="col-sm-8">@releve.DateHeure.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+
+                                    <dt class="col-sm-4">Valeur :</dt>
+                                    <dd class="col-sm-8">@releve.Valeur.ToString("F2")</dd>
+                                </dl>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between mt-4">
+                            <button class="btn btn-secondary" @onclick="NavigateToIndex">
+                                <span class="oi oi-arrow-left" aria-hidden="true"></span> Annuler
+                            </button>
+                            <button class="btn btn-danger" @onclick="DeleteReleve" disabled="@isDeleting">
+                                @if (isDeleting)
+                                {
+                                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                    <span>Suppression...</span>
+                                }
+                                else
+                                {
+                                    <span class="oi oi-trash" aria-hidden="true"></span>
+                                    <span>Confirmer la suppression</span>
+                                }
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private ReleveDto? releve;
+    private bool isDeleting = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadReleve();
+    }
+
+    private async Task LoadReleve()
+    {
+        try
+        {
+            releve = await ApiService.GetByIdAsync(Id);
+            if (releve == null)
+            {
+                Console.WriteLine($"Relevé avec ID {Id} non trouvé");
+                Navigation.NavigateTo("/releves");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement du relevé: {ex.Message}");
+            Navigation.NavigateTo("/releves");
+        }
+    }
+
+    private async Task DeleteReleve()
+    {
+        if (releve == null) return;
+
+        isDeleting = true;
+        try
+        {
+            var success = await ApiService.DeleteAsync(Id);
+            if (success)
+            {
+                Console.WriteLine($"Relevé {Id} supprimé avec succès");
+                Navigation.NavigateTo("/releves");
+            }
+            else
+            {
+                Console.WriteLine($"Échec de la suppression du relevé {Id}");
+                // Optionally show an error message to the user
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la suppression du relevé: {ex.Message}");
+            // Optionally show an error message to the user
+        }
+        finally
+        {
+            isDeleting = false;
+        }
+    }
+
+    private void NavigateToIndex()
+    {
+        Navigation.NavigateTo("/releves");
+    }
+}

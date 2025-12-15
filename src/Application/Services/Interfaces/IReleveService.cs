@@ -1,5 +1,6 @@
 using Application.DTOs.Releve;
 using Application.DTOs.Sonde;
+using Domain.Enums;
 
 namespace Application.Services.Interfaces;
 
@@ -22,6 +23,13 @@ public interface IReleveService
     /// </summary>
     /// <returns>Une collection de DTOs de toutes les Releves.</returns>
     Task<IEnumerable<ReleveDto>> GetAllAsync();
+
+
+    /// <summary>
+    /// Récupère toutes les Releves par filtres.
+    /// </summary>
+    /// <returns>Une collection de DTOs de toutes les Releves.</returns>
+    Task<RelevePageDto> GetAllAsync(int page = 0, int limit = int.MaxValue, TypeReleve? type = null, DateTime? StartDate = null, DateTime? EndDate = null);
 
     /// <summary>
     /// Crée une nouvelle Releve.
@@ -58,4 +66,13 @@ public interface IReleveService
     /// <param name="id">L'identifiant de la Sonde.</param>
     /// <returns>Releve si la Releve existe, sinon null.</returns>
     Task<IEnumerable<ReleveDto>> GetRecentBySondeAync(Guid id,int n=10);
+
+    /// <summary>
+    /// Récupère les relevés d'une sonde dans une plage de dates spécifique.
+    /// </summary>
+    /// <param name="sondeId">L'identifiant de la sonde.</param>
+    /// <param name="startDate">Date de début de la plage.</param>
+    /// <param name="endDate">Date de fin de la plage.</param>
+    /// <returns>Collection des relevés dans la plage de dates spécifiée.</returns>
+    Task<IEnumerable<ReleveDto>> GetBySondeDateRangeAync(Guid sondeId, DateTime startDate, DateTime endDate);
 }
