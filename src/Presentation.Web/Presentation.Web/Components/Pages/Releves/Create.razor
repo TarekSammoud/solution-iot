@@ -1,0 +1,123 @@
+﻿@page "/releves/create"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Releve
+@using Presentation.Web.Services
+@inject ReleveApiService ApiService
+@inject SondeApiService SondeApiService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="mb-3">
+        <label for="Valeur" class="form-label">Valeur <span class="text-danger">*</span></label>
+        <InputNumber id="Valeur" @bind-Value="model.Valeur" class="form-control" />
+        <ValidationMessage For="@(() => model.Valeur)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="DateHeure" class="form-label">DateHeure</label>
+        <InputDate id="DateHeure" @bind-Value="model.DateHeure" class="form-control" typeof="DateTime"/>
+        <ValidationMessage For="@(() => model.DateHeure)" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label for="TypeReleve" class="form-label">TypeReleve</label>
+        <InputSelect  id="TypeReleve" @bind-Value="model.TypeReleve" class="form-control">
+            <option value="">-------</option>
+            @foreach (var e in Enum.GetValues<TypeReleve>())
+            {
+                <option value="@e">@e</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => model.TypeReleve)" class="text-danger" />
+    </div>
+    <div class="mb-3">
+        <label for="Sonde" class="form-label">Sonde</label>
+        <InputSelect id="Sonde" @bind-Value="model.SondeId" class="form-control">
+            <option value="">-------</option>
+            @foreach (var e in sondes)
+            {
+                <option value="@e.Id">@e.Nom</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="@(() => model.SondeId)" class="text-danger" />
+    </div>
+
+
+
+
+
+
+    <div class="mt-4">
+        <button type="submit" class="btn btn-primary" disabled="@isSaving">
+            @if (isSaving)
+            {
+                <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+            }
+            else
+            {
+                <span class="oi oi-check me-2" aria-hidden="true"></span>
+            }
+            Créer
+        </button>
+        <button type="button" class="btn btn-secondary ms-2" @onclick="Cancel" disabled="@isSaving">
+            <span class="oi oi-x me-2" aria-hidden="true"></span> Annuler
+        </button>
+    </div>
+</EditForm>
+
+
+
+@code{
+    private CreateReleveDto model = new();
+    private bool isSaving = false;
+    private string? errorMessage;
+    private List<SondeDto> sondes = new();
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            sondes = (await SondeApiService.GetAllAsync()).ToList();
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des localisations: {ex.Message}");
+            sondes = [];
+        } 
+
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        isSaving = true;
+        errorMessage = null;
+
+        try
+        {
+            await ApiService.CreateAsync(model);
+            Navigation.NavigateTo("/releves");
+        }
+        catch (HttpRequestException ex)
+        {
+            errorMessage = $"Erreur lors de la création de la localisation : {ex.Message}";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Une erreur inattendue s'est produite. Veuillez réessayer.";
+            Console.WriteLine($"Erreur lors de la création: {ex.Message}");
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/releves");
+    }
+}
+

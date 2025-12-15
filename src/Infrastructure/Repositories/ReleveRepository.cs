@@ -24,6 +24,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
             .FirstOrDefaultAsync(r => r.Id == id);
     }
 
@@ -31,6 +33,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r=>r.Sonde.Localisation)
+            .Include(r=>r.Sonde.UniteMesure)
             .OrderByDescending(r => r.DateHeure)
             .ToListAsync();
     }
@@ -68,6 +72,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
             .Where(r => r.SondeId == sondeId)
             .OrderByDescending(r => r.DateHeure)
             .ToListAsync();
@@ -77,6 +83,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
             .Where(r => r.SondeId == sondeId && r.DateHeure >= dateDebut && r.DateHeure <= dateFin)
             .OrderByDescending(r => r.DateHeure)
             .ToListAsync();
@@ -86,6 +94,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
             .Where(r => r.SondeId == sondeId)
             .OrderByDescending(r => r.DateHeure)
             .FirstOrDefaultAsync();
@@ -95,6 +105,8 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
             .Where(r => r.TypeReleve == typeReleve)
             .OrderByDescending(r => r.DateHeure)
             .ToListAsync();

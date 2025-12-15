@@ -1,4 +1,4 @@
-using Application.DTOs;
+using Application.DTOs.Localisation;
 using Application.Mappers;
 using Application.Services;
 using Domain.Entities;
@@ -169,7 +169,7 @@ public class LocalisationServiceTests
     public async Task CreateAsync_DevraitCreerLocalisation_EtRetournerDto()
     {
         // Arrange
-        var createDto = new CreateLocalisationDto
+        var createDto = new Application.DTOs.Localisation.CreateLocalisationDto
         {
             Nom = "Bureau",
             Description = "Espace de travail"

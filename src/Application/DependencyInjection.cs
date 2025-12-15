@@ -23,6 +23,7 @@ public static class DependencyInjection
         services.AddSingleton<UniteMesureMapper>();
         services.AddSingleton<UserMapper>();
         services.AddSingleton<SeuilAlerteMapper>();
+        services.AddSingleton<ReleveMapper>();
 
         services.AddScoped<ILocalisationService, LocalisationService>();
         services.AddScoped<ISystemePartenaireService, SystemePartenaireService>();
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<IUserService, UserService>();
         services.AddScoped<ISondeService, SondeService>();
         services.AddScoped<ISeuilAlerteService, SeuilAlerteService>();
+        services.AddScoped<IReleveService, ReleveService>();
 
         return services;
     }

@@ -23,6 +23,7 @@ builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ISondeRepository, SondeRepository>();
 builder.Services.AddScoped<IAlerteRepository, AlerteRepository>();
 builder.Services.AddScoped<ISeuilAlerteRepository, SeuilAlerteRepository>();
+builder.Services.AddScoped<IReleveRepository, ReleveRepository>();
 
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();
