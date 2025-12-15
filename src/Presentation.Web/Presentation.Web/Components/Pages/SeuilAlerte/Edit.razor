@@ -1,5 +1,7 @@
 ﻿@page "/seuilalerte/edit/{Id:guid}"
 @inject Presentation.Web.Services.SeuilAlerteApiService ApiService
+@rendermode InteractiveServer
+
 @inject NavigationManager Navigation
 @inject SondeApiService SondeApiService
 @using Application.DTOs.SeuilAlerte
@@ -16,13 +18,13 @@ else if (model == null)
 }
 else
 {
-    <EditForm Model="modelEdit" OnValidSubmit="HandleValidSubmit">
+    <EditForm Model="modelEdit" OnValidSubmit="HandleValidSubmit" FormName="EditSeuilForm">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
         <div class="mb-3">
             <label>Valeur (@Unite)</label>
-            <InputNumber class="form-control" @bind-Value="modelEdit.Valeur" step="0.01" />
+            <InputNumber TValue="decimal" class="form-control" @bind-Value="modelEdit.Valeur" />
         </div>
 
         <div class="mb-3 form-check">
@@ -44,7 +46,10 @@ else
     [Parameter] public Guid Id { get; set; }
 
     private SeuilAlerteDto? model;
-    private UpdateSeuilAlerteDto modelEdit = new();
+
+    [SupplyParameterFromForm]
+    private UpdateSeuilAlerteDto modelEdit { get; set; } = new();
+
     private bool isLoading = true;
     private string Unite = "";
 

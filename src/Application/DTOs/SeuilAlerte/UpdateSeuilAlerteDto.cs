@@ -12,7 +12,7 @@ public class UpdateSeuilAlerteDto
     public TypeAlerte TypeAlerte { get; set; }
 
     [Required]
-    public double Valeur { get; set; }
+    public decimal Valeur { get; set; }
 
     public bool EstActif { get; set; }
 }

@@ -13,9 +13,10 @@ public class CreateSeuilAlerteDto
 
     [Required]
     public TypeAlerte TypeAlerte { get; set; }
-
     [Required]
-    public double Valeur { get; set; }
+
+    [Range(-99999999.99, 99999999.99, ErrorMessage = "Valeur numérique invalide")]
+    public decimal Valeur { get; set; } = 0m; 
 
     public bool EstActif { get; set; } = false;
 }

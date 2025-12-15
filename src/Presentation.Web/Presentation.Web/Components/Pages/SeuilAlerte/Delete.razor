@@ -1,6 +1,8 @@
 ﻿@page "/seuilalerte/delete/{Id:guid}"
 @inject Presentation.Web.Services.SeuilAlerteApiService ApiService
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
+
 @using Application.DTOs.SeuilAlerte
 
 <h3>Supprimer un seuil</h3>
@@ -21,7 +23,6 @@ else
             <p><strong>Type :</strong> @model.TypeSeuil</p>
             <p><strong>Valeur :</strong> @model.Valeur</p>
             <p><strong>Date création :</strong> @model.DateCreation.ToLocalTime().ToString("dd/MM/yyyy HH:mm")</p>
-            <!-- afficher nombre d'alertes générées si besoin (nécessite endpoint) -->
             <div class="mt-3">
                 <button class="btn btn-danger" @onclick="ConfirmDelete">Supprimer</button>
                 <button class="btn btn-secondary ms-2" @onclick="Cancel">Annuler</button>
@@ -47,18 +48,25 @@ else
 
     private async Task ConfirmDelete()
     {
+        Console.WriteLine($"Tentative de suppression du seuil {Id}");
+
         var res = await ApiService.DeleteAsync(Id);
+
+        Console.WriteLine($"Status code: {res.StatusCode}");
+        Console.WriteLine($"Success: {res.IsSuccessStatusCode}");
+
         if (res.IsSuccessStatusCode)
         {
+            Console.WriteLine($"Suppression réussie, redirection vers /seuilalerte/sonde/{model!.SondeId}");
             Navigation.NavigateTo($"/seuilalerte/sonde/{model!.SondeId}");
         }
         else
         {
             var txt = await res.Content.ReadAsStringAsync();
+            Console.WriteLine($"Erreur API: {txt}");
             await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
         }
     }
-
     private void Cancel()
     {
         if (model != null) Navigation.NavigateTo($"/seuilalerte/sonde/{model.SondeId}");

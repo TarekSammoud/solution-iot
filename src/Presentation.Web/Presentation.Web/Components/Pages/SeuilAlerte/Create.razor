@@ -4,6 +4,8 @@
 @inject SondeApiService SondeApiService
 @using Application.DTOs.SeuilAlerte
 @using Domain.Enums
+@using System.Text.Json
+
 
 <h3>Créer un seuil - @typeLabel pour la sonde @SondeNom</h3>
 
@@ -13,7 +15,11 @@
 }
 else
 {
-    <EditForm Model="model" OnValidSubmit="HandleValidSubmit">
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+    <EditForm Model="model" OnValidSubmit="HandleValidSubmit" FormName="CreateSeuilForm">
         <DataAnnotationsValidator />
         <ValidationSummary />
 
@@ -29,7 +35,7 @@ else
 
         <div class="mb-3">
             <label>Valeur (@Unite)</label>
-            <InputNumber class="form-control" @bind-Value="model.Valeur" step="0.01" />
+            <InputNumber TValue="decimal" class="form-control" @bind-Value="model.Valeur" />
             @if (!string.IsNullOrEmpty(valueWarning))
             {
                 <div class="text-danger">@valueWarning</div>
@@ -55,15 +61,19 @@ else
     [Parameter] public Guid SondeId { get; set; }
     [Parameter] public TypeSeuil TypeSeuil { get; set; }
 
-    private CreateSeuilAlerteDto model = new();
+
     private bool isLoading = true;
     private string SondeNom = "";
+    private string errorMessage = "";
     private string Unite = "";
     private decimal? SondeValeurMin;
     private decimal? SondeValeurMax;
     private string? existingActiveWarning;
     private string? valueWarning;
     private string typeLabel => TypeSeuil == TypeSeuil.Minimum ? "Minimum" : "Maximum";
+
+    [SupplyParameterFromForm]
+    private CreateSeuilAlerteDto model { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -103,31 +113,42 @@ else
 
     private async Task HandleValidSubmit()
     {
-        // client-side validation des plages
-        valueWarning = null;
-        if (TypeSeuil == TypeSeuil.Minimum && SondeValeurMin.HasValue && (decimal)model.Valeur < SondeValeurMin.Value)
+        try
         {
-            valueWarning = $"Valeur minimale autorisée : {SondeValeurMin.Value}";
-            return;
-        }
-        if (TypeSeuil == TypeSeuil.Maximum && SondeValeurMax.HasValue && (decimal) model.Valeur > SondeValeurMax.Value)
-        {
-            valueWarning = $"Valeur maximale autorisée : {SondeValeurMax.Value}";
-            return;
-        }
+            Console.WriteLine($"Valeur: {model.Valeur}, EstActif: {model.EstActif}");
+            var res = await ApiService.CreateAsync(model);
 
-        var res = await ApiService.CreateAsync(model);
-        if (res.IsSuccessStatusCode)
-        {
-            Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+            if (res.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+            }
+            else
+            {
+                var txt = await res.Content.ReadAsStringAsync();
+
+                try
+                {
+                    var errorJson = JsonDocument.Parse(txt);
+                    if (errorJson.RootElement.TryGetProperty("message", out var messageElement))
+                    {
+                        errorMessage = messageElement.GetString();
+                    }
+                    else
+                    {
+                        errorMessage = txt; 
+                    }
+                }
+                catch
+                {
+                    errorMessage = txt; 
+                }
+            }
         }
-        else
+        catch (Exception ex)
         {
-            var txt = await res.Content.ReadAsStringAsync();
-            await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
+            errorMessage = ex.Message;
         }
     }
-
     private void Cancel() => Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
 
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;

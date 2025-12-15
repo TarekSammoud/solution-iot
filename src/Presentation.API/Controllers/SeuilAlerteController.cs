@@ -42,6 +42,7 @@ namespace IotPlatform.Api.Controllers
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateSeuilAlerteDto dto)
         {
+
             try
             {
                 var created = await _service.CreateAsync(dto);

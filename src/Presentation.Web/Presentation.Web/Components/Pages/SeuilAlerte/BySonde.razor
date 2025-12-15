@@ -1,4 +1,6 @@
 ﻿@page "/seuilalerte/sonde/{SondeId:guid}"
+@rendermode InteractiveServer
+
 @inject Presentation.Web.Services.SeuilAlerteApiService ApiService
 @inject NavigationManager Navigation
 @using Application.DTOs.SeuilAlerte
@@ -23,18 +25,24 @@ else
     <div class="row">
         <div class="col-md-6">
             <div class="card mb-3">
-                <div class="card-header">🔵 Seuil MINIMUM</div>
+                <div class="card-header">Seuil MINIMUM</div>
                 <div class="card-body">
                     @if (seuilMinActif != null)
                     {
-                        <p>✅ Actif: <strong>@seuilMinActif.Valeur</strong> (créé le @seuilMinActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
-                        <button class="btn btn-sm btn-primary me-2" @onclick="() => Edit(seuilMinActif.Id)">Modifier</button>
+                        <p>Actif: <strong>@seuilMinActif.Valeur</strong> (créé le @seuilMinActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
+                        <NavLink class="btn btn-sm btn-primary me-2"
+                                 href="@($"/seuilalerte/edit/{seuilMinActif.Id}")">
+                            Modifier
+                        </NavLink>
                         <button class="btn btn-sm btn-warning" @onclick="() => Toggle(seuilMinActif.Id)">Désactiver</button>
                     }
                     else
                     {
                         <p>Aucun seuil minimum actif.</p>
-                        <button class="btn btn-sm btn-success" @onclick="CreateMin">Créer un seuil minimum</button>
+                        <NavLink class="btn btn-sm btn-success"
+                                 href="@($"/seuilalerte/create/{SondeId}/0")">
+                            Créer un seuil minimum
+                        </NavLink>
                     }
 
                     <hr />
@@ -62,18 +70,21 @@ else
 
         <div class="col-md-6">
             <div class="card mb-3">
-                <div class="card-header">🔴 Seuil MAXIMUM</div>
+                <div class="card-header">Seuil MAXIMUM</div>
                 <div class="card-body">
                     @if (seuilMaxActif != null)
                     {
-                        <p>✅ Actif: <strong>@seuilMaxActif.Valeur</strong> (créé le @seuilMaxActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
+                        <p>Actif: <strong>@seuilMaxActif.Valeur</strong> (créé le @seuilMaxActif.DateCreation.ToLocalTime().ToString("dd/MM/yyyy"))</p>
                         <button class="btn btn-sm btn-primary me-2" @onclick="() => Edit(seuilMaxActif.Id)">Modifier</button>
                         <button class="btn btn-sm btn-warning" @onclick="() => Toggle(seuilMaxActif.Id)">Désactiver</button>
                     }
                     else
                     {
                         <p>Aucun seuil maximum actif.</p>
-                        <button class="btn btn-sm btn-success" @onclick="CreateMax">Créer un seuil maximum</button>
+                        <NavLink class="btn btn-sm btn-success"
+                                 href="@($"/seuilalerte/create/{SondeId}/1")">
+                            Créer un seuil maximum
+                        </NavLink>
                     }
 
                     <hr />
@@ -100,7 +111,10 @@ else
         </div>
     </div>
 
-    <button class="btn btn-secondary" @onclick="Back">Retour à la sonde</button>
+    <NavLink class="btn btn-secondary"
+             href="@($"/sonde/details/{SondeId}")">
+        Retour à la sonde
+    </NavLink>
 }
 
 @code {
@@ -153,8 +167,8 @@ else
         }
     }
 
-    private void CreateMin() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/{TypeSeuil.Minimum}");
-    private void CreateMax() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/{TypeSeuil.Maximum}");
+    private void CreateMin() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/0");
+    private void CreateMax() => Navigation.NavigateTo($"/seuilalerte/create/{SondeId}/1");
     private void Edit(Guid id) => Navigation.NavigateTo($"/seuilalerte/edit/{id}");
     private void Back() => Navigation.NavigateTo($"/sonde/details/{SondeId}");
 
@@ -186,7 +200,7 @@ else
 
     private async Task Delete(Guid id)
     {
-        var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Supprimer ce seuil ?");
+     /*   var confirm = await JSRuntime.InvokeAsync<bool>("confirm", "Supprimer ce seuil ?");
         if (!confirm) return;
         var res = await ApiService.DeleteAsync(id);
         if (res.IsSuccessStatusCode) await Load();
@@ -195,5 +209,7 @@ else
             var txt = await res.Content.ReadAsStringAsync();
             await JSRuntime.InvokeVoidAsync("alert", $"Erreur: {txt}");
         }
+        */
+        Navigation.NavigateTo($"/seuilalerte/delete/{id}");
     }
 }

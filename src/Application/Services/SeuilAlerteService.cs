@@ -57,11 +57,9 @@ namespace Application.Services
 
         public async Task<SeuilAlerteDto> CreateAsync(CreateSeuilAlerteDto dto)
         {
-            // Vérifier sonde existante
             var sonde = await _sondeRepo.GetByIdAsync(dto.SondeId)
                         ?? throw new ArgumentException("Sonde introuvable.");
 
-            // Si activation -> désactiver l'ancien actif du même type
             if (dto.EstActif)
             {
                 var ancienActif = await _seuilRepo.FindActiveBySondeAndTypeAsync(dto.SondeId, dto.TypeSeuil);
@@ -193,14 +191,10 @@ namespace Application.Services
 
         public async Task DeleteAsync(Guid id)
         {
-          /*  var entity = await _seuilRepo.GetByIdAsync(id)
+            var entity = await _seuilRepo.GetByIdAsync(id)
                          ?? throw new KeyNotFoundException("Seuil introuvable.");
 
-            var countActiveAlerts = await _alerteRepo.CountActiveAlertsBySeuilIdAsync(id);
-            if (countActiveAlerts > 0)
-                throw new InvalidOperationException("Impossible de supprimer un seuil possédant des alertes actives.");
-
-            await _seuilRepo.DeleteAsync(entity.Id);*/
+            await _seuilRepo.DeleteAsync(entity.Id);
             await _seuilRepo.SaveChangesAsync();
         }
     }
