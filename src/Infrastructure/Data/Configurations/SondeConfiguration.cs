@@ -26,21 +26,21 @@ public class SondeConfiguration : IEntityTypeConfiguration<Sonde>
 
         // Relation vers Releves - One-to-Many
         // Pas de navigation property dans Sonde (utilisation de eager loading)
-        builder.HasMany<Releve>()
+        builder.HasMany(r => r.Releves)
             .WithOne(r => r.Sonde)
             .HasForeignKey(r => r.SondeId)
             .OnDelete(DeleteBehavior.Cascade); // Supprimer les relevés si la sonde est supprimée
 
         // Relation vers SeuilsAlerte - One-to-Many
         // Pas de navigation property dans Sonde (utilisation de eager loading)
-        builder.HasMany<SeuilAlerte>()
+        builder.HasMany(s => s.SeuilsAlerte)
             .WithOne(sa => sa.Sonde)
             .HasForeignKey(sa => sa.SondeId)
             .OnDelete(DeleteBehavior.Cascade); // Supprimer les seuils si la sonde est supprimée
 
         // Relation vers Alertes - One-to-Many
         // Pas de navigation property dans Sonde (utilisation de eager loading)
-        builder.HasMany<Alerte>()
+        builder.HasMany(a => a.Alertes)
             .WithOne(a => a.Sonde)
             .HasForeignKey(a => a.SondeId)
             .OnDelete(DeleteBehavior.Cascade); // Supprimer les alertes si la sonde est supprimée
