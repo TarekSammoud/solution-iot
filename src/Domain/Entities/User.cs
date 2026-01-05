@@ -43,4 +43,6 @@ public class User
     /// Un compte inactif ne peut pas se connecter au système.
     /// </summary>
     public bool EstActif { get; set; }
+
+
 }

@@ -64,8 +64,7 @@
                     <a class="btn btn-sm btn-info me-1" href="@($"/sonde/details/{s.Id}")">Details</a>
                     <a class="btn btn-sm btn-warning me-1" href="@($"/sonde/edit/{s.Id}")">Edit</a>
                     <a class="btn btn-sm btn-danger" href="@($"/sonde/delete/{s.Id}")">Delete</a>
-                    <a class="btn btn-secondary" href="@($"/seuilalerte/sonde/{s.Id}")">>Seuils alerte</a>
-
+                    <a class="btn btn-secondary" href="@($"/sonde/{s.Id}/seuilalerte")">Seuils alerte</a>
                 </td>
             </tr>
         }

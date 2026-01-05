@@ -49,5 +49,7 @@ namespace Application.DTOs.User
         [Required]
         public bool EstActif { get; set; }
 
+
+
     }
 }

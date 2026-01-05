@@ -14,6 +14,9 @@ namespace Application.DTOs.User
         /// </summary>
         public Guid Id { get; set; }
 
+        public string? AvatarUrl { get; set; }
+
+
         /// <summary>
         /// Nom d'utilisateur unique utilisé pour l'authentification.
         /// </summary>
@@ -53,6 +56,7 @@ namespace Application.DTOs.User
         /// </summary>
         [Required]
         public bool EstActif { get; set; }
+
 
     }
 }
