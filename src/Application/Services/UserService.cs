@@ -82,19 +82,24 @@ namespace Application.Services
 
         public async Task<UserDto?> UpdateAsync(UpdateUserDto dto)
         {
-            // Load existing user
             var user = await _repository.GetByIdAsync(dto.Id);
             if (user == null)
                 return null;
 
-            // UPDATE entity (use your mapper correctly)
             _mapper.UpdateEntity(dto, user);
 
-            // Save
             await _repository.UpdateAsync(user);
 
-            // Return updated value
             return _mapper.ToDto(user);
+        }
+
+        public async Task<UserStatsDto> GetStatsAsync()
+        {
+            return new UserStatsDto
+            {
+                TotalUsers = await _repository.CountAsync(),
+                UsersByRole = await _repository.CountByRoleAsync()
+            };
         }
 
     }

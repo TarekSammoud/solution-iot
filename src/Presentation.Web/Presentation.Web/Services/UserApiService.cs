@@ -74,6 +74,11 @@ public class UserApiService
         return await response.Content.ReadFromJsonAsync<UserDto>();
     }
 
+    public async Task<UserStatsDto?> GetStatsAsync()
+    {
+        return await _httpClient.GetFromJsonAsync<UserStatsDto>($"{ApiBaseUrl}/stats");
+    }
+
     /// <summary>
     /// Supprime une utilisateur via l'API.
     /// </summary>

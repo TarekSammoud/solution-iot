@@ -125,6 +125,20 @@ public class UserRepository : IUserRepository
         }
     }
 
+    public async Task<int> CountAsync()
+    {
+        return await _context.Users.CountAsync();
+    }
+
+    public async Task<Dictionary<string, int>> CountByRoleAsync()
+    {
+        return await _context.Users
+            .GroupBy(u => u.Role)
+            .Select(g => new { Role = g.Key.ToString(), Count = g.Count() })
+            .ToDictionaryAsync(x => x.Role, x => x.Count);
+    }
+
+
     /// <summary>
     /// Vérifie si un utilisateur existe avec l'identifiant spécifié.
     /// </summary>

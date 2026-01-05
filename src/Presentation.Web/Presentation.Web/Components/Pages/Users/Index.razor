@@ -23,6 +23,33 @@
     </button>
 </div>
 
+@if (stats != null)
+{
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h5>Total utilisateurs</h5>
+                    <h2>@stats.TotalUsers</h2>
+                </div>
+            </div>
+        </div>
+
+        @foreach (var role in stats.UsersByRole)
+        {
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <h6>@role.Key</h6>
+                        <h3>@role.Value</h3>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+
 @if (isLoading)
 {
     <div class="text-center">
@@ -104,12 +131,19 @@ else
     private List<UserDto> users = new();
     private bool isLoading = true;
 
+    private UserStatsDto? stats;
+
+
+
+
     protected override async Task OnInitializedAsync()
     {
+
 
         try
         {
             users = await ApiService.GetAllAsync();
+            stats = await ApiService.GetStatsAsync();
         }
         catch (Exception ex)
         {

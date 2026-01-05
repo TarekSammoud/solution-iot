@@ -60,4 +60,7 @@ public interface IUserRepository
     /// <param name="id">Identifiant de l'utilisateur à vérifier.</param>
     /// <returns>True si l'utilisateur existe, false sinon.</returns>
     Task<bool> ExistsAsync(Guid id);
+
+    Task<int> CountAsync();
+    Task<Dictionary<string, int>> CountByRoleAsync();
 }

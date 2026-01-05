@@ -36,6 +36,12 @@ namespace Presentation.API.Controllers
             return Ok(users);*/
         }
 
+        [HttpGet("stats")]
+        public async Task<ActionResult<UserStatsDto>> GetStats()
+        {
+            return Ok(await _userService.GetStatsAsync());
+        }
+
         [HttpGet("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

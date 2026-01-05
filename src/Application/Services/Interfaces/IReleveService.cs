@@ -58,4 +58,6 @@ public interface IReleveService
     /// <param name="id">L'identifiant de la Sonde.</param>
     /// <returns>Releve si la Releve existe, sinon null.</returns>
     Task<IEnumerable<ReleveDto>> GetRecentBySondeAync(Guid id,int n=10);
+
+    Task VerifierEtGererAlertes(Guid releveId);
 }

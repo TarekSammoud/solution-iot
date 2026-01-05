@@ -15,6 +15,7 @@ public class ReleveService : IReleveService
 {
     private readonly IReleveRepository _repository;
     private readonly ISondeRepository _sondeRepository;
+    private readonly ISeuilAlerteService _seuilAlerteService;
     private readonly ReleveMapper _mapper;
 
     /// <summary>
@@ -121,5 +122,13 @@ public class ReleveService : IReleveService
     {
         var releves = await _repository.GetBySondeAsync(id);
         return _mapper.ToDtoList(releves).OrderByDescending(r=>r.DateHeure).Take(n);
+    }
+
+    public async Task VerifierEtGererAlertes(Guid releveId)
+    {
+        var releve = await _repository.GetByIdAsync(releveId);
+        var seuilsAlertes = await _seuilAlerteService.GetBySondeAsync(releve.SondeId);
+
+        throw new NotImplementedException();
     }
 }
