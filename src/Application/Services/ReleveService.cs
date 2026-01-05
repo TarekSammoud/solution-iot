@@ -2,6 +2,7 @@ using Application.DTOs.Releve;
 using Application.DTOs.Sonde;
 using Application.Mappers;
 using Application.Services.Interfaces;
+using Domain.Enums;
 using Domain.Interfaces;
 using System.Collections.ObjectModel;
 
@@ -53,6 +54,17 @@ public class ReleveService : IReleveService
         var Releves = await _repository.GetAllAsync();
         return _mapper.ToDtoList(Releves);
     }
+    /// <summary>
+    /// Récupère toutes les Releves par filtres.
+    /// </summary>
+    /// <returns>Une collection de DTOs de toutes les Releves.</returns>
+    public async Task<RelevePageDto> GetAllAsync(int page = 0, int limit = int.MaxValue, TypeReleve? type = null, DateTime? startDate = null, DateTime? endDate = null)
+    {
+        var Releves = _mapper.ToDtoList (await _repository.GetAllAsync(page, limit, type, startDate, endDate));
+        int total = await _repository.CountRelevesAsync(type,startDate,endDate);
+        return new RelevePageDto(page, total, limit, Releves,startDate,endDate,type);
+    }
+
 
     /// <summary>
     /// Crée une nouvelle Releve.
@@ -130,5 +142,11 @@ public class ReleveService : IReleveService
         var seuilsAlertes = await _seuilAlerteService.GetBySondeAsync(releve.SondeId);
 
         throw new NotImplementedException();
+    }
+
+    public async Task<IEnumerable<ReleveDto>> GetBySondeDateRangeAync(Guid sondeId, DateTime startDate, DateTime endDate)
+    {
+        var releves = await _repository.GetBySondeDateRangeAsync(sondeId, startDate, endDate);
+        return _mapper.ToDtoList(releves);
     }
 }

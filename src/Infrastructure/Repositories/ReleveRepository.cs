@@ -39,6 +39,38 @@ public class ReleveRepository : IReleveRepository
             .ToListAsync();
     }
 
+    /// <summary>
+    /// Récupère toutes les Releves par filtres.
+    /// </summary>
+    /// <returns>Collection de tous les relevés.</returns>
+    public async Task<IEnumerable<Releve>> GetAllAsync(int page = 0, int limit = 50, TypeReleve? type = null, DateTime? StartDate = null, DateTime? EndDate = null)
+    {
+        IQueryable<Releve> query = _context.Releves
+            .Include(r => r.Sonde)
+            .Include(r => r.Sonde.Localisation)
+            .Include(r => r.Sonde.UniteMesure)
+            .OrderByDescending(r => r.DateHeure);
+            
+
+        if (type.HasValue)
+        {
+            query = query.Where(r => r.TypeReleve == type.Value);
+        }
+
+        if (StartDate.HasValue)
+        {
+            query = query.Where(r => r.DateHeure >= StartDate.Value);
+        }
+
+        if (EndDate.HasValue)
+        {
+            query = query.Where(r => r.DateHeure <= EndDate.Value);
+        }
+
+        return await query.Skip(page * limit)
+            .Take(limit).ToListAsync();
+    }
+
     public async Task<Releve> AddAsync(Releve releve)
     {
         // Génère un nouvel Id si non fourni
@@ -116,5 +148,25 @@ public class ReleveRepository : IReleveRepository
     {
         return await _context.Releves
             .CountAsync(r => r.SondeId == sondeId);
+    }
+    public async Task<int> CountRelevesAsync(TypeReleve? type = null, DateTime? StartDate = null, DateTime? EndDate = null)
+    {
+        IQueryable<Releve> query = _context.Releves;
+        if (type.HasValue)
+        {
+            query = query.Where(r => r.TypeReleve == type.Value);
+        }
+
+        if (StartDate.HasValue)
+        {
+            query = query.Where(r => r.DateHeure >= StartDate.Value);
+        }
+
+        if (EndDate.HasValue)
+        {
+            query = query.Where(r => r.DateHeure <= EndDate.Value);
+        }
+        return query.Count();
+
     }
 }

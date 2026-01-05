@@ -43,7 +43,7 @@ public class ReleveConfiguration : IEntityTypeConfiguration<Releve>
         // Relation avec Sonde
         // Cascade delete: si une sonde est supprimée, tous ses relevés sont supprimés
         builder.HasOne(r => r.Sonde)
-            .WithMany()
+            .WithMany(r => r.Releves)
             .HasForeignKey(r => r.SondeId)
             .OnDelete(DeleteBehavior.Cascade);
     }
