@@ -26,11 +26,34 @@ public class ReleveApiService
     /// Récupère toutes les Releves depuis l'API.
     /// </summary>
     /// <returns>Une liste de toutes les Releves, ou une liste vide si aucune.</returns>
-    public async Task<RelevePageDto> GetAllAsync(int page = 0, int limit = int.MaxValue,TypeReleve? type = null, DateTime? startDate = null, DateTime? endDate = null)
+    public async Task<RelevePageDto> GetAllAsync(
+        int page = 0,
+        int limit = int.MaxValue,
+        TypeReleve? type = null,
+        DateTime? startDate = null,
+        DateTime? endDate = null)
     {
-        return await _httpClient.GetFromJsonAsync<RelevePageDto>($"{ApiBaseUrl}?page={page}&limit={limit}&type={type}&startDate={startDate}&endDate={endDate}")
-            ?? new RelevePageDto();
+        var query = new List<string>
+    {
+        $"page={page}",
+        $"limit={limit}"
+    };
+
+        if (type.HasValue)
+            query.Add($"type={type.Value}");
+
+        if (startDate.HasValue)
+            query.Add($"startDate={startDate.Value:yyyy-MM-dd}");
+
+        if (endDate.HasValue)
+            query.Add($"endDate={endDate.Value:yyyy-MM-dd}");
+
+        var url = $"{ApiBaseUrl}?{string.Join("&", query)}";
+
+        return await _httpClient.GetFromJsonAsync<RelevePageDto>(url)
+               ?? new RelevePageDto();
     }
+
 
     /// <summary>
     /// Récupère une Releve par son identifiant.
