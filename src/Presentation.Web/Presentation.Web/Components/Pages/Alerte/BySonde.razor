@@ -1,5 +1,101 @@
-﻿<h3>BySonde</h3>
+﻿@page "/alerte/sonde/{SondeId:guid}"
+@inject Presentation.Web.Services.AlerteApiService AlerteApi
+@inject NavigationManager Navigation
+@using Domain.Enums
+@using Application.DTOs.Alertes
+
+<h3>Alertes pour la sonde @SondeId</h3>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <label>Filtrer par statut</label>
+        <select class="form-select" @bind="FiltreStatut">
+            <option value="">Toutes</option>
+            <option value="Active">Active</option>
+            <option value="Acquittee">Acquittee</option>
+            <option value="Resolue">Resolue</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <label>Filtrer par type seuil</label>
+        <select class="form-select" @bind="FiltreTypeSeuil">
+            <option value="">Tous</option>
+            <option value="Minimum">Minimum</option>
+            <option value="Maximum">Maximum</option>
+        </select>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Type seuil</th>
+            <th>Message</th>
+            <th>Statut</th>
+            <th>Date création</th>
+            <th>Date résolution</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in AlertesFiltrees)
+        {
+            <tr>
+                <td>@a.TypeSeuil</td>
+                <td>@a.Message</td>
+                <td>
+                    <span class="badge @GetBadge(a.Statut)">@a.Statut</span>
+                </td>
+                <td>@a.DateCreation</td>
+                <td>@a.DateResolution</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-1" @onclick="() => Acquitter(a.Id)">Acquitter</button>
+                    <button class="btn btn-sm btn-success me-1" @onclick="() => Resoudre(a.Id)">Résoudre</button>
+                    <button class="btn btn-sm btn-info" @onclick="() => NavigateToDetails(a.Id)">Détails</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
 
 @code {
+    [Parameter] public Guid SondeId { get; set; }
 
+    private List<AlerteDto> Alertes = new();
+    private string? FiltreStatut;
+    private string? FiltreTypeSeuil;
+
+    private IEnumerable<AlerteDto> AlertesFiltrees => Alertes
+        .Where(a => string.IsNullOrEmpty(FiltreStatut) || a.Statut.ToString() == FiltreStatut)
+        .Where(a => string.IsNullOrEmpty(FiltreTypeSeuil) || a.TypeSeuil.ToString() == FiltreTypeSeuil);
+
+    protected override async Task OnInitializedAsync()
+    {
+        Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+    }
+
+    private string GetBadge(StatutAlerte statut) => statut switch
+    {
+        StatutAlerte.Active => "bg-danger",
+        StatutAlerte.Acquittee => "bg-warning",
+        StatutAlerte.Resolue => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private async Task Acquitter(Guid id)
+    {
+        await AlerteApi.AcquitterAsync(id);
+        Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+    }
+
+    private async Task Resoudre(Guid id)
+    {
+        await AlerteApi.ResoudreAsync(id);
+        Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+    }
+
+    private void NavigateToDetails(Guid alerteId)
+    {
+        Navigation.NavigateTo($"/alerte/details/{alerteId}");
+    }
 }

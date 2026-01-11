@@ -1,5 +1,105 @@
-﻿<h3>Dashboard</h3>
+﻿@page "/alerte/dashboard"
+@inject Presentation.Web.Services.AlerteApiService AlerteApi
+@inject NavigationManager Navigation
+@using Domain.Enums
+@using Application.DTOs.Alertes
+
+<h3>Dashboard des alertes</h3>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card text-white bg-danger">
+            <div class="card-body">
+                <h5 class="card-title">Alertes actives</h5>
+                <p class="card-text">@Statistiques.Active</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-dark bg-warning">
+            <div class="card-body">
+                <h5 class="card-title">Alertes acquittées</h5>
+                <p class="card-text">@Statistiques.Acquittee</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <h5 class="card-title">Alertes résolues aujourd'hui</h5>
+                <p class="card-text">@Statistiques.Resolue</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p>Dernière mise à jour : @DerniereMaj.ToString("HH:mm:ss")</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Sonde</th>
+            <th>Type seuil</th>
+            <th>Valeur mesurée</th>
+            <th>Seuil</th>
+            <th>Date création</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in Alertes)
+        {
+            <tr>
+                <td>@a.SondeId</td>
+                <td>@a.TypeSeuil</td>
+                <td>@a.Message</td>
+                <td>@a.DateCreation</td>
+                <td>
+                    <button class="btn btn-sm btn-warning me-1" @onclick="() => Acquitter(a.Id)">Acquitter</button>
+                    <button class="btn btn-sm btn-success me-1" @onclick="() => Resoudre(a.Id)">Résoudre</button>
+                    <button class="btn btn-sm btn-info" @onclick="() => NavigateToDetails(a.Id)">Détails</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
 
 @code {
+    private List<AlerteDto> Alertes = new();
+    private DateTime DerniereMaj;
+    private (int Active, int Acquittee, int Resolue) Statistiques;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerAlertesAsync();
+    }
+
+    private async Task ChargerAlertesAsync()
+    {
+        Alertes = (await AlerteApi.GetDashboardAsync()).Where(a => a.Statut == StatutAlerte.Active).ToList();
+        Statistiques = (
+            Active: Alertes.Count(a => a.Statut == StatutAlerte.Active),
+            Acquittee: Alertes.Count(a => a.Statut == StatutAlerte.Acquittee),
+            Resolue: Alertes.Count(a => a.Statut == StatutAlerte.Resolue)
+        );
+        DerniereMaj = DateTime.Now;
+        StateHasChanged();
+    }
+
+    private async Task Acquitter(Guid id)
+    {
+        await AlerteApi.AcquitterAsync(id);
+        await ChargerAlertesAsync();
+    }
+
+    private async Task Resoudre(Guid id)
+    {
+        await AlerteApi.ResoudreAsync(id);
+        await ChargerAlertesAsync();
+    }
+
+    private void NavigateToDetails(Guid alerteId)
+    {
+        Navigation.NavigateTo($"/alerte/details/{alerteId}");
+    }
 }

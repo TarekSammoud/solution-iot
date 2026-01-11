@@ -2,6 +2,7 @@ using Application.DTOs.Releve;
 using Application.DTOs.Sonde;
 using Application.Mappers;
 using Application.Services.Interfaces;
+using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 using System.Collections.ObjectModel;
@@ -17,6 +18,7 @@ public class ReleveService : IReleveService
     private readonly IReleveRepository _repository;
     private readonly ISondeRepository _sondeRepository;
     private readonly ISeuilAlerteService _seuilAlerteService;
+    private readonly IAlerteService _alerteService;
     private readonly ReleveMapper _mapper;
 
     /// <summary>
@@ -24,12 +26,20 @@ public class ReleveService : IReleveService
     /// </summary>
     /// <param name="repository">Le repository pour accéder aux données.</param>
     /// <param name="mapper">Le mapper pour convertir entre entités et DTOs.</param>
-    public ReleveService(IReleveRepository repository, ReleveMapper mapper, ISondeRepository sondeRepository)
+    public ReleveService(
+        IReleveRepository repository,
+        ReleveMapper mapper,
+        ISondeRepository sondeRepository,
+        ISeuilAlerteService seuilAlerteService,
+        IAlerteService alerteService)
     {
         _repository = repository;
         _mapper = mapper;
         _sondeRepository = sondeRepository;
+        _seuilAlerteService = seuilAlerteService;
+        _alerteService = alerteService;
     }
+
 
     /// <summary>
     /// Récupère une Releve par son identifiant.
@@ -77,7 +87,9 @@ public class ReleveService : IReleveService
 
         // Créer l'entité (Id et DateCreation générés par le repository)
         var created = await _repository.AddAsync(Releve);
-        created.Sonde = await _sondeRepository.GetByIdAsync(created.SondeId);
+        await VerifierEtGererAlertes(created.Id);
+        if (created!=null)
+            created.Sonde = await _sondeRepository.GetByIdAsync(created.SondeId);
         // Retourner le DTO de l'entité créée
         return _mapper.ToDto(created);
     }
@@ -136,17 +148,67 @@ public class ReleveService : IReleveService
         return _mapper.ToDtoList(releves).OrderByDescending(r=>r.DateHeure).Take(n);
     }
 
-    public async Task VerifierEtGererAlertes(Guid releveId)
+    private async Task VerifierEtGererAlertes(Guid releveId)
     {
+        // Relevé
         var releve = await _repository.GetByIdAsync(releveId);
-        var seuilsAlertes = await _seuilAlerteService.GetBySondeAsync(releve.SondeId);
+        if (releve == null)
+            return;
 
-        throw new NotImplementedException();
+        var valeur = releve.Valeur;
+        var dateReleve = releve.DateHeure;
+
+        // Seuils actifs
+        var seuils = await _seuilAlerteService.GetBySondeAsync(releve.SondeId);
+        var seuilsActifs = seuils.Where(s => s.EstActif).ToList();
+
+        // Création d’alertes (dépassement)
+        foreach (var seuil in seuilsActifs)
+        {
+            bool depassement = seuil.TypeSeuil switch
+            {
+                TypeSeuil.Minimum => valeur < seuil.Valeur,
+                TypeSeuil.Maximum => valeur > seuil.Valeur,
+                _ => false
+            };
+
+            if (!depassement)
+                continue;
+
+            // Pas de doublon
+            var alerteExistante = await _alerteService
+                .GetActiveBySondeAndSeuilAsync(releve.SondeId, seuil.Id);
+
+            if (alerteExistante != null)
+                continue;
+
+            // Créer l’alerte via le service
+            await _alerteService.CreerAlerteAsync(
+                releve.SondeId,
+                seuil.Id,
+                seuil.TypeSeuil,
+                seuil.TypeAlerte,
+                valeur,
+                seuil.Valeur,
+                dateReleve);
+        }
+
+        // 4️⃣ Résolution automatique des alertes
+        await _alerteService.ResoudreAlertesSiNecessaireAsync(
+            releve.SondeId,
+            valeur,
+            dateReleve);
     }
+
 
     public async Task<IEnumerable<ReleveDto>> GetBySondeDateRangeAync(Guid sondeId, DateTime startDate, DateTime endDate)
     {
         var releves = await _repository.GetBySondeDateRangeAsync(sondeId, startDate, endDate);
         return _mapper.ToDtoList(releves);
+    }
+
+    Task IReleveService.VerifierEtGererAlertes(Guid releveId)
+    {
+        return VerifierEtGererAlertes(releveId);
     }
 }

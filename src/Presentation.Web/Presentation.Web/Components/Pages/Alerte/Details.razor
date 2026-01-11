@@ -1,5 +1,50 @@
-﻿<h3>Details</h3>
+﻿@page "/alerte/details/{AlerteId:guid}"
+@inject Presentation.Web.Services.AlerteApiService AlerteApi
+@inject NavigationManager Navigation
+@using Application.DTOs.Alertes
+
+<h3>Détails de l'alerte</h3>
+
+@if (Alerte == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <div class="card">
+        <div class="card-body">
+            <h5 class="card-title">@Alerte.TypeSeuil - @Alerte.TypeAlerte</h5>
+            <p><strong>Sonde :</strong> @Alerte.Sonde.Id</p>
+            <p><strong>Message :</strong> @Alerte.Message</p>
+            <p><strong>Statut :</strong> <span class="badge @GetBadge(Alerte.Statut)">@Alerte.Statut</span></p>
+            <p><strong>Date création :</strong> @Alerte.DateCreation</p>
+            <p><strong>Date acquittement :</strong> @Alerte.DateAcquittement</p>
+            <p><strong>Date résolution :</strong> @Alerte.DateResolution</p>
+
+            <button class="btn btn-secondary" @onclick="NavigateToDashboard">Retour au dashboard</button>
+        </div>
+    </div>
+}
 
 @code {
+    [Parameter] public Guid AlerteId { get; set; }
+    private AlerteDetailsDto? Alerte;
 
+    protected override async Task OnInitializedAsync()
+    {
+        Alerte = await AlerteApi.GetDetailsAsync(AlerteId);
+    }
+
+    private string GetBadge(Domain.Enums.StatutAlerte statut) => statut switch
+    {
+        Domain.Enums.StatutAlerte.Active => "bg-danger",
+        Domain.Enums.StatutAlerte.Acquittee => "bg-warning",
+        Domain.Enums.StatutAlerte.Resolue => "bg-success",
+        _ => "bg-secondary"
+    };
+
+    private void NavigateToDashboard()
+    {
+        Navigation.NavigateTo("/alerte/dashboard");
+    }
 }

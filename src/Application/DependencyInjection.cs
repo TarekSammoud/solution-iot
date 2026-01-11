@@ -1,6 +1,7 @@
 using Application.Mappers;
 using Application.Services;
 using Application.Services.Interfaces;
+using IotPlatform.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddScoped<ISondeService, SondeService>();
         services.AddScoped<ISeuilAlerteService, SeuilAlerteService>();
         services.AddScoped<IReleveService, ReleveService>();
+        services.AddScoped<IAlerteService, AlerteService>();
 
         return services;
     }
