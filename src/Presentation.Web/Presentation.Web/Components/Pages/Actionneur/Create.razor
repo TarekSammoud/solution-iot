@@ -1,0 +1,89 @@
+@page "/actionneur/create"
+@using Application.DTOs.Actionneur
+@using Application.DTOs.Localisation
+@inject Presentation.Web.Services.ActionneurApiService ActionneurService
+@inject Presentation.Web.Services.LocalisationApiService LocalisationService
+@inject NavigationManager Navigation
+
+<h3>Créer un Actionneur</h3>
+
+<EditForm Model="NewActionneur"
+          FormName="create-actionneur"
+          OnValidSubmit="HandleValidSubmit">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-3">
+        <label class="form-label">Nom</label>
+        <InputText class="form-control" @bind-Value="NewActionneur.Nom" />
+        <ValidationMessage For="() => NewActionneur.Nom" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Type Actionneur</label>
+        <InputSelect class="form-select" @bind-Value="NewActionneur.TypeActionneur">
+            <option value="">-- Choisir --</option>
+            @foreach (var t in Enum.GetValues<TypeActionneur>())
+            {
+                <option value="@t">@t</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => NewActionneur.TypeActionneur" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Localisation</label>
+        <InputSelect class="form-select" @bind-Value="NewActionneur.LocalisationId">
+            <option value="">-- Choisir --</option>
+            @foreach (var loc in Localisations)
+            {
+                <option value="@loc.Id">@loc.Nom</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => NewActionneur.LocalisationId" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Date Installation</label>
+        <InputDate class="form-control" @bind-Value="NewActionneur.DateInstallation" />
+        <ValidationMessage For="() => NewActionneur.DateInstallation" />
+    </div>
+
+    <div class="mt-4">
+        <button class="btn btn-success" type="submit">Créer</button>
+        <a href="/actionneurs" class="btn btn-outline-secondary ms-2">Annuler</a>
+    </div>
+</EditForm>
+
+@code {
+    [SupplyParameterFromForm]
+    private CreateActionneurDto NewActionneur { get; set; } = new();
+
+    private List<LocalisationDto> Localisations { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            var result = await LocalisationService.GetAllAsync();
+            Localisations = result?.ToList() ?? new List<LocalisationDto>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur chargement localisations: {ex.Message}");
+        }
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        try
+        {
+            await ActionneurService.CreateAsync(NewActionneur);
+            Navigation.NavigateTo("/actionneurs");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur création: {ex.Message}");
+        }
+    }
+}

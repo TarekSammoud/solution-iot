@@ -1,0 +1,78 @@
+﻿@page "/actionneur/{Id:guid}/details"
+@using Application.DTOs.Actionneur
+@using Application.DTOs.Localisation
+@inject Presentation.Web.Services.ActionneurApiService ActionneurService
+@inject Presentation.Web.Services.LocalisationApiService LocalisationService
+@inject NavigationManager Navigation
+
+<h3>Détails Actionneur</h3>
+
+@if(Actionneur != null)
+{
+    <div>
+        <p><strong>Nom:</strong> @Actionneur.Nom</p>
+        <p><strong>Type:</strong> @Actionneur.TypeActionneur</p>
+        <p><strong>Localisation:</strong> @Localisations.FirstOrDefault(l => l.Id == Actionneur.LocalisationId)?.Nom</p>
+        <p><strong>Date Installation:</strong> @Actionneur.DateInstallation.ToShortDateString()</p>
+        <p><strong>État actuel:</strong> @FormatEtat(Actionneur)</p>
+        <p><strong>Dernière modification:</strong> @Actionneur.EtatActuel?.DerniereModification</p>
+
+        <button class="btn btn-warning" @onclick="EditActionneur">Modifier</button>
+        <button class="btn btn-info" @onclick="ControleEtat">Contrôler l'état</button>
+        <button class="btn btn-danger" @onclick="DeleteActionneur">Supprimer</button>
+        <button class="btn btn-secondary" @onclick="GoBack">Retour</button>
+
+    </div>
+}
+else
+{
+    <p>Chargement...</p>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    private ActionneurDto? Actionneur;
+    private List<LocalisationDto> Localisations = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Actionneur = await ActionneurService.GetByIdAsync(Id);
+        Localisations = (await LocalisationService.GetAllAsync()).ToList();
+    }
+
+
+    private void EditActionneur()
+    {
+        Navigation.NavigateTo($"/actionneur/{Id}/edit");
+    }
+
+    private void ControleEtat()
+    {
+        Navigation.NavigateTo($"/actionneur/{Id}/controle");
+    }
+
+    private void DeleteActionneur()
+    {
+        Navigation.NavigateTo($"/actionneur/{Id}/delete");
+    }
+
+    private void GoBack()
+    {
+        Navigation.NavigateTo("/actionneurs");
+    }
+
+    private string FormatEtat(ActionneurDto a)
+    {
+        if (a.EtatActuel?.EstActif == true)
+        {
+            return a.TypeActionneur switch
+            {
+                TypeActionneur.AmpouleSimple => "ON",
+                TypeActionneur.AmpouleVariometre => $"ON ({a.EtatActuel.Pourcentage}%)",
+                TypeActionneur.Moteur => $"ON ({a.EtatActuel.Pourcentage}%)",
+                _ => ""
+            };
+        }
+        return "OFF";
+    }
+}

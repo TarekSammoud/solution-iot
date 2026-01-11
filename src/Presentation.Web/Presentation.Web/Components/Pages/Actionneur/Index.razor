@@ -1,0 +1,107 @@
+@page "/actionneurs"
+@using Application.DTOs.Actionneur
+@using Application.DTOs.Localisation
+@inject Presentation.Web.Services.ActionneurApiService ActionneurService
+@inject Presentation.Web.Services.LocalisationApiService LocalisationService
+
+<h3>Liste des Actionneurs</h3>
+
+<div class="mb-3">
+    <label>Type:</label>
+    <select class="form-select" @bind="SelectedType">
+        <option value="">Tous</option>
+        <option value="AmpouleSimple">AmpouleSimple</option>
+        <option value="AmpouleVariometre">AmpouleVariometre</option>
+        <option value="Moteur">Moteur</option>
+    </select>
+
+    <label>Localisation:</label>
+    <select class="form-select" @bind="SelectedLocalisation">
+        <option value="">Toutes</option>
+        @foreach (var loc in Localisations)
+        {
+            <option value="@loc.Id">@loc.Nom</option>
+        }
+    </select>
+
+    <div class="form-check">
+        <input class="form-check-input" type="checkbox" @bind="FilterActif" />
+        <label class="form-check-label">Afficher uniquement actifs</label>
+    </div>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Nom</th>
+            <th>Type</th>
+            <th>Localisation</th>
+            <th>État actuel</th>
+            <th>Date Installation</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var a in FilteredActionneurs)
+        {
+            <tr>
+                <td>@a.Nom</td>
+                <td>@a.TypeActionneur</td>
+                <td>@Localisations.FirstOrDefault(l => l.Id == a.LocalisationId)?.Nom</td>
+                <td>
+                    <span class="badge @GetBadge(a)">
+                        @FormatEtat(a)
+                    </span>
+                </td>
+                <td>@a.DateInstallation.ToShortDateString()</td>
+                <td>
+                    <a class="btn btn-sm btn-primary" href="/actionneur/@a.Id/details">Details</a>
+                    <a class="btn btn-sm btn-warning" href="/actionneur/@a.Id/edit">Edit</a>
+                    <a class="btn btn-sm btn-danger" href="/actionneur/@a.Id/delete">Delete</a>
+                    <a class="btn btn-sm btn-info" href="/actionneur/@a.Id/controle">Contrôle</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a class="btn btn-success" href="/actionneur/create">Créer un actionneur</a>
+
+@code {
+    private List<ActionneurDto> Actionneurs = new();
+    private List<ActionneurDto> FilteredActionneurs => Actionneurs
+        .Where(a => string.IsNullOrEmpty(SelectedType) || a.TypeActionneur.ToString() == SelectedType)
+        .Where(a => string.IsNullOrEmpty(SelectedLocalisation) || a.LocalisationId.ToString() == SelectedLocalisation)
+        .Where(a => !FilterActif || (a.EtatActuel?.EstActif ?? false))
+        .OrderBy(a => a.Nom)
+        .ToList();
+
+    private List<LocalisationDto> Localisations = new();
+    private string SelectedType = "";
+    private string SelectedLocalisation = "";
+    private bool FilterActif = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Actionneurs = (await ActionneurService.GetAllAsync()).ToList();
+        Localisations = (await LocalisationService.GetAllAsync()).ToList();
+    }
+
+    private string FormatEtat(ActionneurDto a)
+    {
+        if (a.EtatActuel?.EstActif == true)
+        {
+            return a.TypeActionneur switch
+            {
+                TypeActionneur.AmpouleSimple => "ON",
+                TypeActionneur.AmpouleVariometre => $"ON ({a.EtatActuel.Pourcentage}%)",
+                TypeActionneur.Moteur => $"ON ({a.EtatActuel.Pourcentage}%)",
+                _ => ""
+            };
+        }
+        return "OFF";
+    }
+
+    private string GetBadge(ActionneurDto a) =>
+        a.EtatActuel?.EstActif == true ? "bg-success" : "bg-secondary";
+}

@@ -1,0 +1,95 @@
+@page "/actionneur/{Id:guid}/delete"
+@using Application.DTOs.Actionneur
+@inject Presentation.Web.Services.ActionneurApiService ActionneurService
+@inject NavigationManager Navigation
+
+<h3>Supprimer Actionneur</h3>
+
+@if (ErrorMessage != null)
+{
+    <div class="alert alert-danger">@ErrorMessage</div>
+}
+
+@if (Actionneur != null)
+{
+    <div class="alert alert-warning">
+        <p>Êtes-vous sûr de vouloir supprimer l'actionneur <strong>@Actionneur.Nom</strong> ?</p>
+        <p class="text-danger mb-0">Cette action est irréversible.</p>
+    </div>
+
+    <EditForm Model="Actionneur" FormName="delete-actionneur" OnValidSubmit="HandleDelete">
+        <div class="mt-3">
+            <button class="btn btn-danger" type="submit">Supprimer</button>
+            <button class="btn btn-secondary" type="button" @onclick="Cancel">Annuler</button>
+        </div>
+    </EditForm>
+}
+else if (!IsLoading)
+{
+    <div class="alert alert-danger">Actionneur introuvable.</div>
+    <button class="btn btn-secondary" @onclick="Cancel">Retour</button>
+}
+else
+{
+    <p>Chargement...</p>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    [SupplyParameterFromForm]
+    private ActionneurDto? Actionneur { get; set; }
+
+    private string? ErrorMessage { get; set; }
+    private bool IsLoading { get; set; } = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Actionneur = await ActionneurService.GetByIdAsync(Id);
+
+            if (Actionneur == null)
+            {
+                ErrorMessage = "Actionneur introuvable.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur lors du chargement: {ex.Message}";
+            Console.WriteLine($"Erreur: {ex}");
+        }
+        finally
+        {
+            IsLoading = false;
+        }
+    }
+
+    private async Task HandleDelete()
+    {
+        try
+        {
+            var success = await ActionneurService.DeleteAsync(Id);
+
+            if (success)
+            {
+                Navigation.NavigateTo("/actionneurs");
+            }
+            else
+            {
+                ErrorMessage = "Échec de la suppression de l'actionneur.";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur lors de la suppression: {ex.Message}";
+            Console.WriteLine($"Erreur: {ex}");
+        }
+    }
+
+    private void Cancel()
+    {
+        Navigation.NavigateTo("/actionneurs");
+    }
+}

@@ -34,6 +34,8 @@ public static class DependencyInjection
         services.AddScoped<ISeuilAlerteService, SeuilAlerteService>();
         services.AddScoped<IReleveService, ReleveService>();
         services.AddScoped<IAlerteService, AlerteService>();
+        services.AddScoped<IActionneurService, ActionneurService>();
+        services.AddScoped<IEtatActionneurService, EtatActionneurService>();
 
         return services;
     }
