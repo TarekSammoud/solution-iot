@@ -1,7 +1,6 @@
 using Application.Mappers;
 using Application.Services;
 using Application.Services.Interfaces;
-using IotPlatform.Application.Services;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace Application;

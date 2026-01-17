@@ -1,4 +1,4 @@
-﻿@page "/releves/create"
+@page "/releves/create"
 @using Application.DTOs.Sonde
 @using Application.DTOs.Releve
 @using Presentation.Web.Services
@@ -7,25 +7,42 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
+<PageTitle>Créer un relevé</PageTitle>
+
+<h3>Créer un nouveau relevé</h3>
+
+<hr />
+
 <EditForm Model="@model" OnValidSubmit="HandleValidSubmit">
     <DataAnnotationsValidator />
     <ValidationSummary class="text-danger" />
+    
+    @if (!string.IsNullOrEmpty(validationMessage))
+    {
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            @validationMessage
+            <button type="button" class="btn-close" @onclick="() => validationMessage = null" aria-label="Close"></button>
+        </div>
+    }
 
     <div class="mb-3">
         <label for="Valeur" class="form-label">Valeur <span class="text-danger">*</span></label>
-        <InputNumber id="Valeur" @bind-Value="model.Valeur" class="form-control" />
+        <InputNumber id="Valeur" @bind-Value="model.Valeur" class="form-control" @oninput="OnValeurChanged" />
         <ValidationMessage For="@(() => model.Valeur)" class="text-danger" />
+        <div class="form-text">La valeur sera validée par rapport aux limites min/max de la sonde sélectionnée.</div>
     </div>
 
     <div class="mb-3">
-        <label for="DateHeure" class="form-label">DateHeure</label>
-        <InputDate id="DateHeure" @bind-Value="model.DateHeure" class="form-control" typeof="DateTime"/>
+        <label for="DateHeure" class="form-label">Date et heure <span class="text-danger">*</span></label>
+        <InputDate id="DateHeure" @bind-Value="model.DateHeure" class="form-control" />
         <ValidationMessage For="@(() => model.DateHeure)" class="text-danger" />
+        <div class="form-text">Date et heure du relevé. Format : JJ/MM/AAAA HH:MM</div>
     </div>
 
     <div class="mb-3">
-        <label for="TypeReleve" class="form-label">TypeReleve</label>
-        <InputSelect  id="TypeReleve" @bind-Value="model.TypeReleve" class="form-control">
+        <label for="TypeReleve" class="form-label">Type de relevé <span class="text-danger">*</span></label>
+        <InputSelect id="TypeReleve" @bind-Value="model.TypeReleve" class="form-control">
             <option value="">-------</option>
             @foreach (var e in Enum.GetValues<TypeReleve>())
             {
@@ -33,10 +50,11 @@
             }
         </InputSelect>
         <ValidationMessage For="@(() => model.TypeReleve)" class="text-danger" />
+        <div class="form-text">Sélectionnez le type de relevé.</div>
     </div>
     <div class="mb-3">
-        <label for="Sonde" class="form-label">Sonde</label>
-        <InputSelect id="Sonde" @bind-Value="model.SondeId" class="form-control">
+        <label for="Sonde" class="form-label">Sonde <span class="text-danger">*</span></label>
+        <InputSelect id="Sonde" @bind-Value="model.SondeId" class="form-control" @onchange="OnSondeChanged">
             <option value="">-------</option>
             @foreach (var e in sondes)
             {
@@ -44,6 +62,7 @@
             }
         </InputSelect>
         <ValidationMessage For="@(() => model.SondeId)" class="text-danger" />
+        <div class="form-text">Sélectionnez la sonde pour valider la plage de valeurs.</div>
     </div>
 
 
@@ -76,25 +95,76 @@
     private bool isSaving = false;
     private string? errorMessage;
     private List<SondeDto> sondes = new();
+    private string? validationMessage;
+    
     protected override async Task OnInitializedAsync()
     {
         try
         {
             sondes = (await SondeApiService.GetAllAsync()).ToList();
-
+            // Set default datetime to now
+            model.DateHeure = DateTime.Now;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Erreur lors du chargement des localisations: {ex.Message}");
+            Console.WriteLine($"Erreur lors du chargement des sondes: {ex.Message}");
             sondes = [];
         } 
+    }
 
+    /// <summary>
+    /// Validates if the current Releve value is within the selected Sonde's min/max range
+    /// </summary>
+    /// <returns>True if validation passes, false otherwise</returns>
+    private bool ValidateSondeValueRange()
+    {
+        if (model.SondeId == Guid.Empty)
+            return true; // No sonde selected yet, skip validation
+            
+        var selectedSonde = sondes.FirstOrDefault(s => s.Id == model.SondeId);
+        if (selectedSonde == null)
+            return true; // Sonde not found, skip validation
+            
+        // Check if both min and max values are set for the sonde
+        if (selectedSonde.ValeurMin.HasValue && selectedSonde.ValeurMax.HasValue)
+        {
+            if (model.Valeur < selectedSonde.ValeurMin.Value || model.Valeur > selectedSonde.ValeurMax.Value)
+            {
+                validationMessage = $"La valeur doit être comprise entre {selectedSonde.ValeurMin.Value} et {selectedSonde.ValeurMax.Value} pour cette sonde.";
+                return false;
+            }
+        }
+        // Check only min value
+        else if (selectedSonde.ValeurMin.HasValue)
+        {
+            if (model.Valeur < selectedSonde.ValeurMin.Value)
+            {
+                validationMessage = $"La valeur doit être supérieure ou égale à {selectedSonde.ValeurMin.Value} pour cette sonde.";
+                return false;
+            }
+        }
+        // Check only max value
+        else if (selectedSonde.ValeurMax.HasValue)
+        {
+            if (model.Valeur > selectedSonde.ValeurMax.Value)
+            {
+                validationMessage = $"La valeur doit être inférieure ou égale à {selectedSonde.ValeurMax.Value} pour cette sonde.";
+                return false;
+            }
+        }
+        
+        // Validation passed, clear any previous message
+        validationMessage = null;
+        return true;
     }
 
     private async Task HandleValidSubmit()
     {
+       
+        
         isSaving = true;
         errorMessage = null;
+        validationMessage = null;
 
         try
         {
@@ -103,7 +173,7 @@
         }
         catch (HttpRequestException ex)
         {
-            errorMessage = $"Erreur lors de la création de la localisation : {ex.Message}";
+            errorMessage = $"Erreur lors de la création du relevé : {ex.Message}";
         }
         catch (Exception ex)
         {
@@ -118,6 +188,32 @@
     private void Cancel()
     {
         Navigation.NavigateTo("/releves");
+    }
+
+    /// <summary>
+    /// Handles when the selected Sonde changes to validate the current value
+    /// </summary>
+    private void OnSondeChanged(ChangeEventArgs e)
+    {
+        if (Guid.TryParse(e.Value?.ToString(), out var sondeId))
+        {
+            model.SondeId = sondeId;
+            // Validate the current value against the newly selected sonde
+            ValidateSondeValueRange();
+        }
+    }
+
+    /// <summary>
+    /// Handles when the Valeur changes to validate against the selected sonde
+    /// </summary>
+    private void OnValeurChanged(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out var valeur))
+        {
+            model.Valeur = valeur;
+            // Validate the new value against the selected sonde
+            //ValidateSondeValueRange();
+        }
     }
 }
 

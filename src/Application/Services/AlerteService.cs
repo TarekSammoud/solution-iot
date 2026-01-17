@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Alertes;
+﻿﻿﻿using Application.DTOs.Alertes;
 using Application.DTOs.SeuilAlerte;
 using Application.DTOs.Sonde;
 using Application.Services.Interfaces;
@@ -6,7 +6,7 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Interfaces;
 
-namespace IotPlatform.Application.Services;
+namespace Application.Services;
 
 public class AlerteService : IAlerteService
 {
@@ -52,6 +52,10 @@ public class AlerteService : IAlerteService
         decimal valeurSeuil,
         DateTime dateReleve)
     {
+        // Récupérer la sonde pour obtenir l'unité de mesure
+        var sonde = await _sondeRepository.GetByIdAsync(sondeId);
+        var uniteMesure = sonde?.UniteMesure?.Symbole ?? "";
+
         var alerte = new Alerte
         {
             Id = Guid.NewGuid(),
@@ -62,9 +66,9 @@ public class AlerteService : IAlerteService
             Statut = StatutAlerte.Active,
             DateCreation = DateTime.UtcNow,
             Message =
-                $"Valeur {valeurMesuree} détectée le {dateReleve:dd/MM/yyyy HH:mm} " +
-                $"{(typeSeuil == TypeSeuil.Minimum ? "en dessous" : "au-dessus")} " +
-                $"du seuil ({valeurSeuil})"
+                $"Seuil {(typeSeuil == TypeSeuil.Minimum ? "Min" : "Max")} dépassé : " +
+                $"valeur mesurée {valeurMesuree} {uniteMesure}, " +
+                $"seuil configuré {valeurSeuil} {uniteMesure}"
         };
 
         await _alerteRepository.AddAsync(alerte);

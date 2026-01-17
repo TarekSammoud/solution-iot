@@ -10,6 +10,8 @@
 @inject NavigationManager Navigation
 @rendermode InteractiveServer
 
+<PageTitle>Créer une Sonde</PageTitle>
+
 <h3>Créer une Sonde</h3>
 
 @if (sonde == null)
@@ -18,111 +20,217 @@
 }
 else
 {
-    <EditForm Model="sonde" OnValidSubmit="HandleValidSubmit">
+    <EditForm Model="sonde" OnValidSubmit="HandleValidSubmit" OnInvalidSubmit="HandleInvalidSubmit" class="needs-validation" novalidate FormName="createSondeForm">
         <DataAnnotationsValidator />
-        <ValidationSummary />
+        
+        @if (showValidationErrors)
+        {
+            <div class="alert alert-danger alert-validation-summary" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    Veuillez corriger les erreurs suivantes :
+                </h5>
+                <ValidationSummary />
+            </div>
+        }
 
-        <fieldset class="mb-3">
-            <legend>Informations générales</legend>
-            <InputText class="form-control mb-2" @bind-Value="sonde.Nom" placeholder="Nom" />
-            <InputSelect class="form-select mb-2" @bind-Value="sonde.TypeSonde" @onchange="OnTypeSondeChanged">
-                @foreach (var type in Enum.GetValues<TypeSonde>())
-                {
-                    <option value="@type">@type</option>
-                }
-            </InputSelect>
-            <InputCheckbox class="form-check-input" @bind-Value="sonde.EstActif" /> Actif
+        <!-- Device Information Section -->
+        <fieldset class="mb-4">
+            <legend class="h5 text-primary">
+                <i class="bi bi-cpu me-2"></i>
+                Informations générales
+            </legend>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="sonde-nom">Nom de la sonde <span class="text-danger">*</span></label>
+                    <InputText id="sonde-nom" class="form-control" @bind-Value="sonde.Nom" placeholder="Entrez le nom de la sonde" />
+                    <ValidationMessage For="@(() => sonde.Nom)" />
+                    <div class="form-text">Le nom doit contenir entre 1 et 100 caractères.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="sonde-type">Type de sonde <span class="text-danger">*</span></label>
+                    <InputSelect id="sonde-type" class="form-select" @bind-Value="sonde.TypeSonde" @onchange="OnTypeSondeChanged">
+                        <option value="">-- Sélectionner un type --</option>
+                        @foreach (var type in Enum.GetValues<TypeSonde>())
+                        {
+                            <option value="@type">@type</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => sonde.TypeSonde)" />
+                    <div class="form-text">Sélectionnez le type de sonde approprié.</div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="canal-communication">Canal de communication <span class="text-danger">*</span></label>
+                    <InputSelect id="canal-communication" class="form-select" @bind-Value="sonde.CanalCommunication">
+                        <option value="">-- Sélectionner un canal --</option>
+                        @foreach (var canal in Enum.GetValues<CanalCommunication>())
+                        {
+                            <option value="@canal">@canal</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => sonde.CanalCommunication)" />
+                    <div class="form-text">Sélectionnez le canal de communication pour la sonde.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <div class="form-check mt-4">
+                        <InputCheckbox id="est-actif" class="form-check-input" @bind-Value="sonde.EstActif" />
+                        <label class="form-check-label" for="est-actif">Actif</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12 mb-3">
+                    <label class="form-label" for="url-device">URL du périphérique (optionnel)</label>
+                    <InputText id="url-device" class="form-control" @bind-Value="sonde.UrlDevice" placeholder="https://example.com/device" />
+                    <ValidationMessage For="@(() => sonde.UrlDevice)" />
+                    <div class="form-text">URL de communication avec le périphérique (format : https://...).</div>
+                </div>
+            </div>
         </fieldset>
 
-        <fieldset class="mb-3">
-            <legend>Localisation & mesure</legend>
-            <InputSelect class="form-select mb-2" @bind-Value="sonde.LocalisationId">
-                <option value="">-- Sélectionner --</option>
-                @foreach (var loc in localisations)
-                {
-                    <option value="@loc.Id">@loc.Nom</option>
-                }
-            </InputSelect>
-
-            <InputSelect class="form-select mb-2" @bind-Value="sonde.UniteMesureId">
-                <option value="">-- Sélectionner --</option>
-                @foreach (var um in uniteMesuresFiltered)
-                {
-                    <option value="@um.Id">@um.Symbole</option>
-                }
-            </InputSelect>
+        <!-- Location & Measurement Section -->
+        <fieldset class="mb-4">
+            <legend class="h5 text-primary">
+                <i class="bi bi-geo-alt me-2"></i>
+                Localisation & mesure
+            </legend>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="localisation">Localisation <span class="text-danger">*</span></label>
+                    <InputSelect id="localisation" class="form-select" @bind-Value="sonde.LocalisationId">
+                        <option value="">-- Sélectionner une localisation --</option>
+                        @foreach (var loc in localisations)
+                        {
+                            <option value="@loc.Id">@loc.Nom</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => sonde.LocalisationId)" />
+                    <div class="form-text">Sélectionnez l'emplacement où la sonde sera installée.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="unite-mesure">Unité de mesure <span class="text-danger">*</span></label>
+                    <InputSelect id="unite-mesure" class="form-select" @bind-Value="sonde.UniteMesureId">
+                        <option value="">-- Sélectionner une unité --</option>
+                        @foreach (var um in uniteMesuresFiltered)
+                        {
+                            <option value="@um.Id">@um.Nom</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="@(() => sonde.UniteMesureId)" />
+                    <div class="form-text">Sélectionnez l'unité de mesure appropriée pour cette sonde.</div>
+                </div>
+            </div>
         </fieldset>
 
-        <fieldset class="mb-3">
-            <legend>Plages de mesure</legend>
-            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMin" placeholder="Valeur Min" />
-            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMax" placeholder="Valeur Max" />
+        <!-- Measurement Ranges Section -->
+        <fieldset class="mb-4">
+            <legend class="h5 text-primary">
+                <i class="bi bi-graph-up me-2"></i>
+                Plages de mesure
+            </legend>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="valeur-min">Valeur min (optionnel)</label>
+                    <InputNumber id="valeur-min" class="form-control" @bind-Value="sonde.ValeurMin" placeholder="Valeur minimale" />
+                    <ValidationMessage For="@(() => sonde.ValeurMin)" />
+                    <div class="form-text">Valeur minimale que la sonde peut mesurer.</div>
+                </div>
+                
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="valeur-max">Valeur max (optionnel)</label>
+                    <InputNumber id="valeur-max" class="form-control" @bind-Value="sonde.ValeurMax" placeholder="Valeur maximale" />
+                    <ValidationMessage For="@(() => sonde.ValeurMax)" />
+                    <div class="form-text">Valeur maximale que la sonde peut mesurer.</div>
+                </div>
+            </div>
         </fieldset>
 
-        <fieldset class="mb-3">
-            <legend>Communication</legend>
-            <InputSelect class="form-select mb-2" @bind-Value="sonde.CanalCommunication" @onchange="OnCanalChanged">
-                @foreach (var canal in Enum.GetValues<CanalCommunication>())
-                {
-                    <option value="@canal">@canal</option>
-                }
-            </InputSelect>
-            <InputText class="form-control mb-2" @bind-Value="sonde.UrlDevice" placeholder="UrlDevice" disabled="@isUrlDisabled" />
-            <InputText class="form-control mb-2" @bind-Value="sonde.CredentialsDevice" placeholder="CredentialsDevice (optionnel)" />
+        <!-- Installation Date Section -->
+        <fieldset class="mb-4">
+            <legend class="h5 text-primary">
+                <i class="bi bi-calendar-date me-2"></i>
+                Date d'installation
+            </legend>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label" for="date-installation">Date d'installation <span class="text-danger">*</span></label>
+                    <InputDate id="date-installation" class="form-control" @bind-Value="sonde.DateInstallation" />
+                    <ValidationMessage For="@(() => sonde.DateInstallation)" />
+                    <div class="form-text">
+                        <i class="bi bi-info-circle me-1"></i>
+                        La date ne peut pas être dans le futur. Format : JJ/MM/AAAA
+                    </div>
+                </div>
+            </div>
         </fieldset>
 
-        <fieldset class="mb-3">
-            <legend>Installation</legend>
-            <InputDate class="form-control mb-2" @bind-Value="sonde.DateInstallation" />
-        </fieldset>
+        <!-- Action Buttons -->
+        <div class="d-flex gap-2 mb-4">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>
+                Créer la sonde
+            </button>
+            <a href="/sonde" class="btn btn-secondary">
+                <i class="bi bi-x-circle me-2"></i>
+                Annuler
+            </a>
+        </div>
 
-        <button type="submit" class="btn btn-primary">Créer</button>
-        <a class="btn btn-secondary ms-2" href="/sonde">Annuler</a>
+        <!-- Required Fields Legend -->
+        <div class="text-muted">
+            <small>
+                <i class="bi bi-info-circle me-1"></i>
+                Les champs marqués d'une <span class="text-danger">*</span> sont obligatoires.
+            </small>
+        </div>
     </EditForm>
 }
 
 @code {
-    private CreateSondeDto? sonde;
-    private IEnumerable<LocalisationDto> localisations = new List<LocalisationDto>();
-    private IEnumerable<UniteMesureDto> uniteMesures = new List<UniteMesureDto>();
-    private IEnumerable<UniteMesureDto> uniteMesuresFiltered => uniteMesures.Where(um => um.TypeSonde == sonde?.TypeSonde);
-    private bool isUrlDisabled = false;
+    private CreateSondeDto sonde = new();
+    private List<LocalisationDto> localisations = new();
+    private List<UniteMesureDto> uniteMesures = new();
+    private List<UniteMesureDto> uniteMesuresFiltered = new();
+    private bool showValidationErrors = false;
 
+    /// <summary>
+    /// Initializes the component by loading required data.
+    /// </summary>
     protected override async Task OnInitializedAsync()
     {
-        localisations = await LocalisationService.GetAllAsync();
-        uniteMesures = await UniteMesureService.GetAllAsync();
-
-        sonde = new CreateSondeDto
+        try
         {
-            EstActif = true,
-            TypeSonde = TypeSonde.Temperature,
-            CanalCommunication = CanalCommunication.HttpPush,
-            DateInstallation = DateTime.Today
-        };
-
-        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
+            // Load reference data
+            localisations = await LocalisationService.GetAllAsync();
+            uniteMesures = await UniteMesureService.GetAllAsync();
+            
+            // Initialize with all measurement units (will be filtered when TypeSonde is selected)
+            uniteMesuresFiltered = uniteMesures?.ToList() ?? new List<UniteMesureDto>();
+            
+            // Set default installation date to today
+            sonde.DateInstallation = DateTime.Now.Date;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading initial data: {ex.Message}");
+            uniteMesuresFiltered = new List<UniteMesureDto>();
+        }
     }
 
-
-    private void OnTypeSondeChanged(ChangeEventArgs e)
-    {
-        if (sonde == null) return;
-
-        sonde.TypeSonde = Enum.Parse<TypeSonde>(e.Value?.ToString() ?? "Temperature");
-        if (!uniteMesuresFiltered.Any(um => um.Id == sonde.UniteMesureId))
-            sonde.UniteMesureId = Guid.Empty;
-    }
-
-    private void OnCanalChanged(ChangeEventArgs e)
-    {
-        if (sonde == null) return;
-
-        sonde.CanalCommunication = Enum.Parse<CanalCommunication>(e.Value?.ToString() ?? "HttpPush");
-        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
-        if (isUrlDisabled) sonde.UrlDevice = string.Empty;
-    }
-
+    /// <summary>
+    /// Handles successful form submission.
+    /// </summary>
     private async Task HandleValidSubmit()
     {
         if (sonde == null) return;
@@ -134,7 +242,40 @@ else
         }
         catch (Exception ex)
         {
-            Console.WriteLine(ex.Message);
+            Console.WriteLine($"Error creating sonde: {ex.Message}");
+            showValidationErrors = true;
         }
+    }
+
+    /// <summary>
+    /// Handles form validation failure.
+    /// </summary>
+    private void HandleInvalidSubmit()
+    {
+        showValidationErrors = true;
+        Console.WriteLine("Form validation failed - displaying validation summary");
+        
+        // Force validation messages to display for all fields
+        StateHasChanged();
+    }
+
+    /// <summary>
+    /// Handles the TypeSonde dropdown change event to filter available measurement units.
+    /// </summary>
+    /// <param name="e">The change event arguments</param>
+    private void OnTypeSondeChanged(ChangeEventArgs e)
+    {
+        if (Enum.TryParse<TypeSonde>(e.Value?.ToString(), out var type))
+        {
+            uniteMesuresFiltered = uniteMesures?.Where(um => um.TypeSonde == type).ToList() ?? new List<UniteMesureDto>();
+        }
+        else
+        {
+            // If no type is selected, show all available measurement units
+            uniteMesuresFiltered = uniteMesures?.ToList() ?? new List<UniteMesureDto>();
+        }
+        
+        // Reset the selected measurement unit when type changes
+        sonde.UniteMesureId = Guid.Empty;
     }
 }

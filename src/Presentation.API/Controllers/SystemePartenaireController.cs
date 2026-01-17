@@ -1,5 +1,6 @@
 using Application.DTOs.SystemePartenaire;
 using Application.Services.Interfaces;
+using IotPlatform.Application.DTOs.External;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Presentation.API.Controllers;
@@ -134,5 +135,88 @@ public class SystemePartenairesController : ControllerBase
         }
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// Récupère les sondes disponibles depuis un système partenaire.
+    /// </summary>
+    /// <param name="id">L'identifiant du système partenaire.</param>
+    /// <returns>La liste des sondes disponibles chez le partenaire.</returns>
+    /// <response code="200">Retourne la liste des sondes du partenaire.</response>
+    /// <response code="400">Le système partenaire n'a pas de credentials configurés ou l'URL est invalide.</response>
+    /// <response code="401">Authentification échouée avec le système partenaire.</response>
+    /// <response code="404">Le système partenaire n'existe pas.</response>
+    /// <response code="500">Erreur de communication avec le système partenaire.</response>
+    [HttpGet("{id}/sondes")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<IEnumerable<ExternalSondeDto>>> GetSondesFromPartenaire(Guid id)
+    {
+        try
+        {
+            var sondes = await _service.GetSondesFromPartenaire(id);
+            return Ok(sondes);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex) when (ex.Message == "Authentification échouée")
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Importe les sondes depuis un système partenaire vers une localisation cible.
+    /// </summary>
+    /// <param name="id">L'identifiant du système partenaire.</param>
+    /// <param name="localisationCibleId">L'identifiant de la localisation où importer les sondes.</param>
+    /// <returns>Le résultat de l'import avec le nombre de sondes importées et les erreurs éventuelles.</returns>
+    /// <response code="200">L'import a été effectué avec succès.</response>
+    /// <response code="400">La localisation cible n'existe pas ou le système partenaire n'a pas de credentials configurés.</response>
+    /// <response code="401">Authentification échouée avec le système partenaire.</response>
+    /// <response code="404">Le système partenaire n'existe pas.</response>
+    /// <response code="500">Erreur de communication avec le système partenaire.</response>
+    [HttpPost("{id}/import-sondes")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<ActionResult<ImportSondeResultDto>> ImportSondesFromPartenaire(Guid id, [FromQuery] Guid localisationCibleId, [FromBody] List<Guid>? sondeIds = null)
+    {
+        try
+        {
+            var resultat = await _service.ImportSondesFromPartenaire(id, localisationCibleId, sondeIds);
+            return Ok(resultat);
+        }
+        catch (ArgumentException ex)
+        {
+            return NotFound(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (Exception ex) when (ex.Message == "Authentification échouée")
+        {
+            return Unauthorized(ex.Message);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ex.Message);
+        }
     }
 }

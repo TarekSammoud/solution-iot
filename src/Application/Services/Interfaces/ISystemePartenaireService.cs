@@ -1,4 +1,5 @@
 using Application.DTOs.SystemePartenaire;
+using IotPlatform.Application.DTOs.External;
 
 namespace Application.Services.Interfaces;
 
@@ -49,4 +50,20 @@ public interface ISystemePartenaireService
     /// <param name="id">L'identifiant de la SystemePartenaire.</param>
     /// <returns>True si la SystemePartenaire existe, sinon false.</returns>
     Task<bool> ExistsAsync(Guid id);
+
+    /// <summary>
+    /// Récupère les sondes disponibles depuis un système partenaire.
+    /// </summary>
+    /// <param name="systemePartenaireId">L'identifiant du système partenaire.</param>
+    /// <returns>La liste des sondes disponibles chez le partenaire.</returns>
+    Task<List<ExternalSondeDto>> GetSondesFromPartenaire(Guid systemePartenaireId);
+
+    /// <summary>
+    /// Importe les sondes depuis un système partenaire vers une localisation cible.
+    /// </summary>
+    /// <param name="systemePartenaireId">L'identifiant du système partenaire.</param>
+    /// <param name="localisationCibleId">L'identifiant de la localisation où importer les sondes.</param>
+    /// <param name="sondeIds">Liste des IDs de sondes à importer (si null ou vide, toutes les sondes disponibles seront importées).</param>
+    /// <returns>Le résultat de l'import avec le nombre de sondes importées et les erreurs éventuelles.</returns>
+    Task<ImportSondeResultDto> ImportSondesFromPartenaire(Guid systemePartenaireId, Guid localisationCibleId, List<Guid>? sondeIds = null);
 }

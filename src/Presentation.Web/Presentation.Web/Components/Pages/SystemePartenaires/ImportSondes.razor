@@ -1,0 +1,400 @@
+@page "/systeme-partenaires/{id}/import-sondes"
+@using Application.DTOs
+@using Application.DTOs.Localisation
+@using Application.DTOs.SystemePartenaire
+@using IotPlatform.Application.DTOs.External
+@using Presentation.Web.Services
+@using Domain.Enums
+@inject SystemePartenaireApiService ApiService
+@inject LocalisationApiService LocalisationService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+<PageTitle>Importer des sondes</PageTitle>
+
+<h3>Importer des sondes depuis le système partenaire</h3>
+
+@if (systemePartenaire != null)
+{
+    <div class="alert alert-info">
+        <h4>@systemePartenaire.Nom</h4>
+        <p><strong>URL:</strong> @systemePartenaire.UrlBase</p>
+        <p><strong>Statut:</strong> @(systemePartenaire.EstActif ? "Actif" : "Inactif")</p>
+    </div>
+}
+
+<div class="mb-3">
+    <button class="btn btn-primary" @onclick="ChargerSondes" disabled="@isLoading">
+        @if (isLoading)
+        {
+            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+            <span>Chargement...</span>
+        }
+        else
+        {
+            <span>Charger les sondes disponibles</span>
+        }
+    </button>
+</div>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <strong>Erreur:</strong> @errorMessage
+        <button type="button" class="btn-close" @onclick="() => errorMessage = null"></button>
+    </div>
+}
+
+
+@if (isImporting)
+{
+    <div class="mb-3">
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                 style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                Import en cours...
+            </div>
+        </div>
+    </div>
+}
+
+
+
+@if (sondesExternes.Any())
+{
+    <div class="mb-3">
+        <button class="btn btn-secondary me-2" @onclick="SelectionnerTout">
+            <i class="bi bi-check-all"></i> Tout sélectionner
+        </button>
+        <button class="btn btn-secondary" @onclick="ToutDeselectionner">
+            <i class="bi bi-x"></i> Tout déselectionner
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th scope="col">
+                        <input type="checkbox" @bind="toutesSelectionnees" @bind:event="onchange" @onclick="BasculerSelectionToutes" />
+                    </th>
+                    <th scope="col">Nom</th>
+                    <th scope="col">Type</th>
+                    <th scope="col">Unité</th>
+                    <th scope="col">Localisation d'origine</th>
+                    <th scope="col">Statut</th>
+                    <th scope="col">Date d'installation</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var sonde in sondesExternes)
+                {
+                    <tr>
+                        <td>
+                            <input type="checkbox" @bind="sondesSelectionnees[sonde.Id]" />
+                        </td>
+                        <td>@sonde.Nom</td>
+                        <td>
+                            <span class="badge bg-info">@GetTypeSondeLabel(sonde.TypeSonde)</span>
+                        </td>
+                        <td>@sonde.UniteMesureSymbole</td>
+                        <td>@sonde.LocalisationNom</td>
+                        <td>
+                            @if (sonde.EstActif)
+                            {
+                                <span class="badge bg-success">Actif</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactif</span>
+                            }
+                        </td>
+                        <td>@sonde.DateInstallation.ToString("dd/MM/yyyy")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    @if (sondesSelectionnees.Values.Any(v => v))
+    {
+        <div class="mb-3">
+            <label for="localisationCible" class="form-label">Sélectionner la localisation cible:</label>
+            <select class="form-select" @bind="localisationCibleId">
+                <option value="">-- Sélectionner une localisation --</option>
+                @foreach (var loc in localisations)
+                {
+                    <option value="@loc.Id.ToString()">@loc.Nom</option>
+                }
+            </select>
+        </div>
+       
+
+        <div class="mb-3">
+            <button class="btn btn-success me-2" @onclick="ImporterSondesSelectionnees" disabled="@string.IsNullOrEmpty(localisationCibleId)">
+                @if (isImporting)
+                {
+                    <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                    <span>Import en cours...</span>
+                }
+                else
+                {
+                    <span>Importer @NombreSondesSelectionnees sonde(s) sélectionnée(s)</span>
+                }
+            </button>
+        </div>
+    }
+    @if (showImportResults && importResult != null)
+{
+    <div class="alert alert-info alert-dismissible fade show" role="alert">
+        <h5>Résultat de l'import</h5>
+        <div class="mb-2">
+            <strong>Sondes importées:</strong> @importResult.NombreImportees
+        </div>
+        @if (importResult.NombreDoublons > 0)
+        {
+            <div class="mb-2">
+                <strong>Doublons ignorés:</strong> @importResult.NombreDoublons
+            </div>
+        }
+        @if (importResult.Erreurs.Any())
+        {
+            <div class="mb-2">
+                <strong>Erreurs:</strong>
+                <ul class="mb-0">
+                    @foreach (var erreur in importResult.Erreurs)
+                    {
+                        <li>@erreur</li>
+                    }
+                </ul>
+            </div>
+        }
+        <button type="button" class="btn-close" @onclick="() => showImportResults = false"></button>
+    </div>
+}
+
+
+
+@if (isImporting)
+{
+    <div class="mb-3">
+        <div class="progress">
+            <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                 style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">
+                Import en cours...
+            </div>
+        </div>
+    </div>
+}
+}
+else if (aCharge)
+{
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Cliquez sur "Charger les sondes disponibles" pour voir les sondes du partenaire.
+    </div>
+}
+
+
+
+<div class="mt-4">
+    <button class="btn btn-outline-secondary" @onclick="RetourALaListe">
+        <i class="bi bi-arrow-left"></i> Retour à la liste des systèmes partenaires
+    </button>
+</div>
+
+@code {
+    [Parameter] public string Id { get; set; } = string.Empty;
+
+    private SystemePartenaireDto? systemePartenaire;
+    private List<ExternalSondeDto> sondesExternes = new();
+    private List<LocalisationDto> localisations = new();
+    private Dictionary<Guid, bool> sondesSelectionnees = new();
+    private string localisationCibleId = string.Empty;
+    private bool isLoading = false;
+    private bool isImporting = false;
+    private bool aCharge = false;
+    private bool showImportResults = false;
+    private ImportSondeResultDto? importResult;
+    private string? errorMessage;
+    private string? successMessage;
+    private bool toutesSelectionnees = false;
+
+    private int NombreSondesSelectionnees => sondesSelectionnees.Count(kvp => kvp.Value);
+
+    protected override async Task OnInitializedAsync()
+    {
+        await ChargerDonneesInitialisation();
+    }
+
+    private async Task ChargerDonneesInitialisation()
+    {
+        try
+        {
+            if (Guid.TryParse(Id, out var systemePartenaireId))
+            {
+                systemePartenaire = await ApiService.GetByIdAsync(systemePartenaireId);
+                localisations = await LocalisationService.GetAllAsync();
+                aCharge = true;
+            }
+            else
+            {
+                errorMessage = "ID du système partenaire invalide.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des données initiales: {ex.Message}";
+        }
+    }
+
+    private async Task ChargerSondes()
+    {
+        try
+        {
+            isLoading = true;
+            errorMessage = null;
+            successMessage = null;
+            showImportResults = false;
+
+            if (Guid.TryParse(Id, out var systemePartenaireId))
+            {
+                sondesExternes = await ApiService.GetSondesFromPartenaireAsync(systemePartenaireId);
+                
+                // Initialiser la sélection
+                sondesSelectionnees.Clear();
+                foreach (var sonde in sondesExternes)
+                {
+                    sondesSelectionnees[sonde.Id] = false;
+                }
+
+                successMessage = $"{sondesExternes.Count} sondes chargées avec succès.";
+            }
+            else
+            {
+                errorMessage = "ID du système partenaire invalide.";
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            errorMessage = "Erreur d'authentification. Veuillez vous reconnecter.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors du chargement des sondes: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+            aCharge = false;
+        }
+    }
+
+    private void SelectionnerTout()
+    {
+        foreach (var key in sondesSelectionnees.Keys.ToList())
+        {
+            sondesSelectionnees[key] = true;
+        }
+        toutesSelectionnees = true;
+    }
+
+    private void ToutDeselectionner()
+    {
+        foreach (var key in sondesSelectionnees.Keys.ToList())
+        {
+            sondesSelectionnees[key] = false;
+        }
+        toutesSelectionnees = false;
+    }
+
+    private void BasculerSelectionToutes()
+    {
+        if (toutesSelectionnees)
+        {
+            SelectionnerTout();
+        }
+        else
+        {
+            ToutDeselectionner();
+        }
+    }
+
+    private async Task ImporterSondesSelectionnees()
+    {
+        try
+        {
+            isImporting = true;
+            errorMessage = null;
+            successMessage = null;
+            showImportResults = false;
+
+            var sondesAImporter = sondesSelectionnees.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+            
+            if (!sondesAImporter.Any())
+            {
+                errorMessage = "Aucune sonde sélectionnée pour l'import.";
+                return;
+            }
+
+            if (!Guid.TryParse(localisationCibleId, out var locId))
+            {
+                errorMessage = "Localisation cible invalide.";
+                return;
+            }
+
+            if (Guid.TryParse(Id, out var systemePartenaireId))
+            {
+                // Récupérer les IDs des sondes sélectionnées
+                var selectedSondeIds = sondesSelectionnees.Where(kvp => kvp.Value).Select(kvp => kvp.Key).ToList();
+                
+                importResult = await ApiService.ImportSondesFromPartenaireAsync(systemePartenaireId, locId, selectedSondeIds);
+                
+                if (importResult != null)
+                {
+                    successMessage = $"Import réussi: {importResult.NombreImportees} sondes importées.";
+                    showImportResults = true;
+                    
+                    // Réinitialiser la sélection après import réussi
+                    foreach (var key in sondesSelectionnees.Keys.ToList())
+                    {
+                        sondesSelectionnees[key] = false;
+                    }
+                    toutesSelectionnees = false;
+                    localisationCibleId = string.Empty;
+                }
+                else
+                {
+                    errorMessage = "L'import a échoué.";
+                }
+            }
+        }
+        catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+        {
+            errorMessage = "Erreur d'authentification. Veuillez vous reconnecter.";
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Erreur lors de l'import: {ex.Message}";
+        }
+        finally
+        {
+            isImporting = false;
+        }
+    }
+
+    private void RetourALaListe()
+    {
+        Navigation.NavigateTo("/systeme-partenaires");
+    }
+
+    private string GetTypeSondeLabel(TypeSonde type)
+    {
+        return type switch
+        {
+            TypeSonde.Temperature => "Température",
+            TypeSonde.Hydrometrie => "Humidité",
+            TypeSonde.QualiteAir => "Qualité de l'air",
+            _ => type.ToString()
+        };
+    }
+}

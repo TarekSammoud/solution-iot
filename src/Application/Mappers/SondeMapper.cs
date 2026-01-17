@@ -25,8 +25,8 @@ namespace Application.Mappers
                 TypeSonde = sonde.TypeSonde,
                 UniteMesureId = sonde.UniteMesureId,
                 UniteMesureSymbole = sonde.UniteMesure?.Symbole ?? string.Empty,
-              //  ValeurMin = sonde.ValeurMin,
-               // ValeurMax = sonde.ValeurMax
+                ValeurMin = sonde.ValeurMin,
+                ValeurMax = sonde.ValeurMax
             };
         }
 
@@ -46,8 +46,8 @@ namespace Application.Mappers
                 CredentialsDevice = dto.CredentialsDevice,
                 TypeSonde = dto.TypeSonde,
                 UniteMesureId = dto.UniteMesureId,
-               // V = dto.ValeurMin,
-              //  ValeurMax = dto.ValeurMax
+                ValeurMin = dto.ValeurMin,
+                ValeurMax = dto.ValeurMax
             };
         }
 
@@ -63,8 +63,8 @@ namespace Application.Mappers
             sonde.CredentialsDevice = dto.CredentialsDevice;
             sonde.TypeSonde = dto.TypeSonde;
             sonde.UniteMesureId = dto.UniteMesureId;
-          /*  sonde.ValeurMin = dto.ValeurMin;
-            sonde.ValeurMax = dto.ValeurMax;*/
+            sonde.ValeurMin = dto.ValeurMin;
+            sonde.ValeurMax = dto.ValeurMax;
         }
     }
 }

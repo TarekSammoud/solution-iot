@@ -21,6 +21,13 @@ else
     <EditForm Model="sonde" OnValidSubmit="HandleValidSubmit">
         <DataAnnotationsValidator />
         <ValidationSummary />
+        
+        @if (!string.IsNullOrEmpty(errorMessage))
+        {
+            <div class="alert alert-danger" role="alert">
+                @errorMessage
+            </div>
+        }
 
         <fieldset class="mb-3">
             <legend>Informations générales</legend>
@@ -55,8 +62,8 @@ else
 
         <fieldset class="mb-3">
             <legend>Plages de mesure</legend>
-            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMin" placeholder="Valeur Min" />
-            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMax" placeholder="Valeur Max" />
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMin" placeholder="Valeur Min" @oninput="OnValeurChanged" />
+            <InputNumber class="form-control mb-2" @bind-Value="sonde.ValeurMax" placeholder="Valeur Max" @oninput="OnValeurChanged" />
         </fieldset>
 
         <fieldset class="mb-3">
@@ -89,6 +96,21 @@ else
     private IEnumerable<UniteMesureDto> uniteMesures = new List<UniteMesureDto>();
     private IEnumerable<UniteMesureDto> uniteMesuresFiltered => uniteMesures.Where(um => um.TypeSonde == sonde?.TypeSonde);
     private bool isUrlDisabled = false;
+    private string? errorMessage;
+
+    private bool ValidateValeurMinMax()
+    {
+        if (sonde == null) return true;
+        
+        // If both values are provided, ValeurMin must be less than ValeurMax
+        if (sonde.ValeurMin.HasValue && sonde.ValeurMax.HasValue && sonde.ValeurMin >= sonde.ValeurMax)
+        {
+            errorMessage = "ValeurMin doit être inférieur à ValeurMax";
+            return false;
+        }
+        
+        return true;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -136,9 +158,28 @@ else
         if (isUrlDisabled) sonde.UrlDevice = string.Empty;
     }
 
+    private void OnValeurChanged(EventArgs e)
+    {
+        // Clear error message when user starts typing new values
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            errorMessage = null;
+            StateHasChanged();
+        }
+    }
+
     private async Task HandleValidSubmit()
     {
         if (sonde == null) return;
+
+        // Clear previous error message
+        errorMessage = null;
+
+        // Validate ValeurMin < ValeurMax
+        if (!ValidateValeurMinMax())
+        {
+            return;
+        }
 
         try
         {
@@ -147,7 +188,7 @@ else
         }
         catch (Exception ex)
         {
-            // handle error
+            errorMessage = ex.Message;
         }
     }
 }

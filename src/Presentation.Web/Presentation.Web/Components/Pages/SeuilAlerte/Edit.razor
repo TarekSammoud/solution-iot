@@ -82,7 +82,7 @@ else
         if (res.IsSuccessStatusCode)
         {
             var updated = await res.Content.ReadFromJsonAsync<SeuilAlerteDto>();
-            Navigation.NavigateTo($"/seuilalerte/sonde/{updated!.SondeId}");
+            Navigation.NavigateTo($"/sonde/{updated!.SondeId}/seuilalerte");
         }
         else
         {
@@ -93,7 +93,7 @@ else
 
     private void Cancel()
     {
-        if (model != null) Navigation.NavigateTo($"/seuilalerte/sonde/{model.SondeId}");
+        if (model != null) Navigation.NavigateTo($"/sonde/{model.SondeId}/seuilalerte");
         else Navigation.NavigateTo("/");
     }
 

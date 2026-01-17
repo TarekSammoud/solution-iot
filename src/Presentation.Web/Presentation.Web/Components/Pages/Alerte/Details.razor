@@ -1,4 +1,4 @@
-﻿@page "/alerte/details/{AlerteId:guid}"
+@page "/alerte/details/{AlerteId:guid}"
 @inject Presentation.Web.Services.AlerteApiService AlerteApi
 @inject NavigationManager Navigation
 @using Application.DTOs.Alertes
@@ -14,14 +14,60 @@ else
     <div class="card">
         <div class="card-body">
             <h5 class="card-title">@Alerte.TypeSeuil - @Alerte.TypeAlerte</h5>
-            <p><strong>Sonde :</strong> @Alerte.Sonde.Id</p>
-            <p><strong>Message :</strong> @Alerte.Message</p>
-            <p><strong>Statut :</strong> <span class="badge @GetBadge(Alerte.Statut)">@Alerte.Statut</span></p>
-            <p><strong>Date création :</strong> @Alerte.DateCreation</p>
-            <p><strong>Date acquittement :</strong> @Alerte.DateAcquittement</p>
-            <p><strong>Date résolution :</strong> @Alerte.DateResolution</p>
-
-            <button class="btn btn-secondary" @onclick="NavigateToDashboard">Retour au dashboard</button>
+            
+            <!-- Informations de la sonde -->
+            <div class="mb-3">
+                <h6>Informations de la sonde</h6>
+                <p><strong>Nom :</strong> @Alerte.Sonde.Nom</p>
+                <p><strong>Type :</strong> @Alerte.Sonde.TypeSonde</p>
+                <p><strong>Localisation :</strong> @Alerte.Sonde.LocalisationNom</p>
+            </div>
+            
+            <!-- Informations du seuil -->
+            <div class="mb-3">
+                <h6>Informations du seuil</h6>
+                <p><strong>Type :</strong> @Alerte.SeuilAlerte.TypeSeuil</p>
+                <p><strong>Valeur configurée :</strong> @Alerte.SeuilAlerte.Valeur</p>
+            </div>
+            
+            <!-- Informations du relevé déclencheur -->
+            <div class="mb-3">
+                <h6>Informations du relevé déclencheur</h6>
+                <p><strong>Valeur mesurée :</strong> @(ParseMessage(Alerte.Message).valeurMesuree)</p>
+                <p><strong>Message :</strong> @Alerte.Message</p>
+            </div>
+            
+            <!-- Timeline -->
+            <div class="mb-3">
+                <h6>Timeline</h6>
+                <p><strong>Création :</strong> @Alerte.DateCreation</p>
+                @if (Alerte.DateAcquittement.HasValue)
+                {
+                    <p><strong>Acquittement :</strong> @Alerte.DateAcquittement</p>
+                }
+                @if (Alerte.DateResolution.HasValue)
+                {
+                    <p><strong>Résolution :</strong> @Alerte.DateResolution</p>
+                }
+            </div>
+            
+            <p><strong>Statut actuel :</strong> <span class="badge @GetBadge(Alerte.Statut)">@Alerte.Statut</span></p>
+            
+            <!-- Actions conditionnelles -->
+            <div class="mt-3">
+                @if (Alerte.Statut == Domain.Enums.StatutAlerte.Active)
+                {
+                    <button class="btn btn-warning me-2" @onclick="() => Acquitter(Alerte.Id)">Acquitter</button>
+                    <button class="btn btn-success me-2" @onclick="() => Resoudre(Alerte.Id)">Résoudre</button>
+                }
+                else if (Alerte.Statut == Domain.Enums.StatutAlerte.Acquittee)
+                {
+                    <button class="btn btn-success me-2" @onclick="() => Resoudre(Alerte.Id)">Résoudre</button>
+                }
+                <!-- Si Résolue : aucune action -->
+                
+                <button class="btn btn-secondary" @onclick="NavigateToDashboard">Retour au dashboard</button>
+            </div>
         </div>
     </div>
 }
@@ -46,5 +92,61 @@ else
     private void NavigateToDashboard()
     {
         Navigation.NavigateTo("/alerte/dashboard");
+    }
+
+    private (string valeurMesuree, string seuil) ParseMessage(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+            return ("N/A", "N/A");
+
+        try
+        {
+            // Message format: "Valeur {valeurMesuree} détectée le {date} {(en dessous|au-dessus)} du seuil ({valeurSeuil})"
+            var parts = message.Split(' ');
+            if (parts.Length >= 2)
+            {
+                var valeurMesuree = parts[1]; // "Valeur" is parts[0]
+                
+                // Find the threshold value in parentheses at the end
+                var lastPart = parts[^1];
+                if (lastPart.StartsWith("(") && lastPart.EndsWith(")"))
+                {
+                    var seuil = lastPart.Trim('(', ')');
+                    return (valeurMesuree, seuil);
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, return the original message as fallback
+        }
+
+        return ("N/A", "N/A");
+    }
+
+    private async Task Acquitter(Guid id)
+    {
+        try
+        {
+            await AlerteApi.AcquitterAsync(id);
+            Alerte = await AlerteApi.GetDetailsAsync(AlerteId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'acquittement: {ex.Message}");
+        }
+    }
+
+    private async Task Resoudre(Guid id)
+    {
+        try
+        {
+            await AlerteApi.ResoudreAsync(id);
+            Alerte = await AlerteApi.GetDetailsAsync(AlerteId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la résolution: {ex.Message}");
+        }
     }
 }

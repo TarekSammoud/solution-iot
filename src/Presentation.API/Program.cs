@@ -28,12 +28,15 @@ builder.Services.AddScoped<IReleveRepository, ReleveRepository>();
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();
 
+// Configuration de HttpClient pour les appels externes
+builder.Services.AddHttpClient();
+
 // Configuration CORS pour Blazor Client
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowBlazorClient", policy =>
     {
-        policy.WithOrigins("https://localhost:7002", "http://localhost:5002")
+        policy.WithOrigins("https://localhost:7002", "http://localhost:5002", "https://localhost:7175", "http://localhost:5063")
               .AllowAnyMethod()
               .AllowAnyHeader();
     });

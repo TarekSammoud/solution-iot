@@ -70,6 +70,20 @@ public abstract class Device
     /// </summary>
     public string? CredentialsDevice { get; set; }
 
+    /// <summary>
+    /// Valeur minimale de mesure pour les sondes (optionnel).
+    /// Utilisé pour définir la plage de mesure valide de la sonde.
+    /// Null si aucune limite minimale n'est définie.
+    /// </summary>
+    public decimal? ValeurMin { get; set; }
+
+    /// <summary>
+    /// Valeur maximale de mesure pour les sondes (optionnel).
+    /// Utilisé pour définir la plage de mesure valide de la sonde.
+    /// Null si aucune limite maximale n'est définie.
+    /// </summary>
+    public decimal? ValeurMax { get; set; }
+
     // Navigation properties
 
     /// <summary>

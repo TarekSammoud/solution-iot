@@ -1,15 +1,17 @@
-﻿@page "/alerte/sonde/{SondeId:guid}"
+@page "/alerte/sonde/{SondeId:guid}"
 @inject Presentation.Web.Services.AlerteApiService AlerteApi
+@inject Presentation.Web.Services.SondeApiService SondeApi
 @inject NavigationManager Navigation
 @using Domain.Enums
 @using Application.DTOs.Alertes
+@using Application.DTOs.Sonde
 
-<h3>Alertes pour la sonde @SondeId</h3>
+<h3>Alertes pour la sonde @(Sonde?.Nom ?? SondeId.ToString())</h3>
 
 <div class="row mb-3">
     <div class="col-md-3">
         <label>Filtrer par statut</label>
-        <select class="form-select" @bind="FiltreStatut">
+        <select class="form-select" @bind="FiltreStatut" @bind:event="onchange">
             <option value="">Toutes</option>
             <option value="Active">Active</option>
             <option value="Acquittee">Acquittee</option>
@@ -18,7 +20,7 @@
     </div>
     <div class="col-md-3">
         <label>Filtrer par type seuil</label>
-        <select class="form-select" @bind="FiltreTypeSeuil">
+        <select class="form-select" @bind="FiltreTypeSeuil" @bind:event="onchange">
             <option value="">Tous</option>
             <option value="Minimum">Minimum</option>
             <option value="Maximum">Maximum</option>
@@ -29,8 +31,8 @@
 <table class="table table-striped">
     <thead>
         <tr>
-            <th>Type seuil</th>
-            <th>Message</th>
+            <th>Type Seuil</th>
+            <th>Valeur</th>
             <th>Statut</th>
             <th>Date création</th>
             <th>Date résolution</th>
@@ -40,9 +42,10 @@
     <tbody>
         @foreach (var a in AlertesFiltrees)
         {
+            var (valeurMesuree, _) = ParseMessage(a.Message);
             <tr>
                 <td>@a.TypeSeuil</td>
-                <td>@a.Message</td>
+                <td>@valeurMesuree</td>
                 <td>
                     <span class="badge @GetBadge(a.Statut)">@a.Statut</span>
                 </td>
@@ -61,16 +64,18 @@
 @code {
     [Parameter] public Guid SondeId { get; set; }
 
+    private SondeDto? Sonde;
     private List<AlerteDto> Alertes = new();
     private string? FiltreStatut;
     private string? FiltreTypeSeuil;
 
     private IEnumerable<AlerteDto> AlertesFiltrees => Alertes
-        .Where(a => string.IsNullOrEmpty(FiltreStatut) || a.Statut.ToString() == FiltreStatut)
-        .Where(a => string.IsNullOrEmpty(FiltreTypeSeuil) || a.TypeSeuil.ToString() == FiltreTypeSeuil);
+        .Where(a => string.IsNullOrEmpty(FiltreStatut) || Enum.TryParse<StatutAlerte>(FiltreStatut, out var s) && a.Statut == s)
+        .Where(a => string.IsNullOrEmpty(FiltreTypeSeuil) || Enum.TryParse<TypeSeuil>(FiltreTypeSeuil, out var t) && a.TypeSeuil == t);
 
     protected override async Task OnInitializedAsync()
     {
+        Sonde = await SondeApi.GetByIdAsync(SondeId);
         Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
     }
 
@@ -84,18 +89,62 @@
 
     private async Task Acquitter(Guid id)
     {
-        await AlerteApi.AcquitterAsync(id);
-        Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+        try
+        {
+            await AlerteApi.AcquitterAsync(id);
+            Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'acquittement: {ex.Message}");
+        }
     }
 
     private async Task Resoudre(Guid id)
     {
-        await AlerteApi.ResoudreAsync(id);
-        Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+        try
+        {
+            await AlerteApi.ResoudreAsync(id);
+            Alertes = (await AlerteApi.GetBySondeAsync(SondeId, null, null)).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la résolution: {ex.Message}");
+        }
     }
 
     private void NavigateToDetails(Guid alerteId)
     {
         Navigation.NavigateTo($"/alerte/details/{alerteId}");
+    }
+
+    private (string valeurMesuree, string seuil) ParseMessage(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+            return ("N/A", "N/A");
+
+        try
+        {
+            // Message format: "Valeur {valeurMesuree} détectée le {date} {(en dessous|au-dessus)} du seuil ({valeurSeuil})"
+            var parts = message.Split(' ');
+            if (parts.Length >= 2)
+            {
+                var valeurMesuree = parts[1]; // "Valeur" is parts[0]
+                
+                // Find the threshold value in parentheses at the end
+                var lastPart = parts[^1];
+                if (lastPart.StartsWith("(") && lastPart.EndsWith(")"))
+                {
+                    var seuil = lastPart.Trim('(', ')');
+                    return (valeurMesuree, seuil);
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, return the original message as fallback
+        }
+
+        return ("N/A", "N/A");
     }
 }

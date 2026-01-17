@@ -120,7 +120,7 @@ else
 
             if (res.IsSuccessStatusCode)
             {
-                Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+                Navigation.NavigateTo($"/sonde/{SondeId}");
             }
             else
             {
@@ -149,7 +149,7 @@ else
             errorMessage = ex.Message;
         }
     }
-    private void Cancel() => Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}");
+    private void Cancel() => Navigation.NavigateTo($"/seuilalerte/sonde/{SondeId}/seuilalerte");
 
     [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
 }

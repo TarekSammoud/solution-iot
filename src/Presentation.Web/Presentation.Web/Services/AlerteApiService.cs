@@ -1,4 +1,4 @@
-﻿using System.Net.Http.Json;
+using System.Net.Http.Json;
 using Application.DTOs.Alertes;
 using Domain.Enums;
 
@@ -28,7 +28,7 @@ namespace Presentation.Web.Services
             StatutAlerte? statut = null,
             TypeSeuil? typeSeuil = null)
         {
-            var url = $"api/alerte/sonde/{sondeId}";
+            var url = $"api/alerte/by-sonde/{sondeId}";
 
             var query = new List<string>();
             if (statut.HasValue) query.Add($"statut={statut.Value}");
@@ -51,14 +51,22 @@ namespace Presentation.Web.Services
 
         public async Task AcquitterAsync(Guid alerteId, string? commentaire = null)
         {
-            var dto = new { Commentaire = commentaire };
-            await _http.PostAsJsonAsync($"api/alerte/{alerteId}/acquitter", dto);
+            var url = $"api/alerte/{alerteId}/acquitter";
+            if (!string.IsNullOrEmpty(commentaire))
+                url += $"?commentaire={Uri.EscapeDataString(commentaire)}";
+            
+            var response = await _http.PostAsync(url, null);
+            response.EnsureSuccessStatusCode();
         }
 
         public async Task ResoudreAsync(Guid alerteId, string? commentaire = null)
         {
-            var dto = new { Commentaire = commentaire };
-            await _http.PostAsJsonAsync($"api/alerte/{alerteId}/resoudre", dto);
+            var url = $"api/alerte/{alerteId}/resoudre";
+            if (!string.IsNullOrEmpty(commentaire))
+                url += $"?commentaire={Uri.EscapeDataString(commentaire)}";
+            
+            var response = await _http.PostAsync(url, null);
+            response.EnsureSuccessStatusCode();
         }
     }
 }

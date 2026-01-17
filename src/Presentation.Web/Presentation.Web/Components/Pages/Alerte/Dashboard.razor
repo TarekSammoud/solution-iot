@@ -43,21 +43,25 @@
             <th>Valeur mesurée</th>
             <th>Seuil</th>
             <th>Date création</th>
+            <th>Statut</th>
             <th>Actions</th>
         </tr>
     </thead>
     <tbody>
         @foreach (var a in Alertes)
         {
+            var (valeurMesuree, seuil) = ParseMessage(a.Message);
             <tr>
                 <td>@a.SondeId</td>
                 <td>@a.TypeSeuil</td>
-                <td>@a.Message</td>
+                <td>@valeurMesuree</td>
+                <td>@seuil</td>
                 <td>@a.DateCreation</td>
+                <td><span class="badge @GetBadge(a.Statut)">@a.Statut</span></td>
                 <td>
-                    <button class="btn btn-sm btn-warning me-1" @onclick="() => Acquitter(a.Id)">Acquitter</button>
-                    <button class="btn btn-sm btn-success me-1" @onclick="() => Resoudre(a.Id)">Résoudre</button>
-                    <button class="btn btn-sm btn-info" @onclick="() => NavigateToDetails(a.Id)">Détails</button>
+                    <button type="button" class="btn  btn-warning me-1" @onclick="() => Acquitter(a.Id)">Acquitter</button>
+                    <button type="button" class="btn  btn-success me-1" @onclick="() => Resoudre(a.Id)">Résoudre</button>
+                    <button type="button" class="btn  btn-info" @onclick="() => NavigateToDetails(a.Id)">Détails</button>
                 </td>
             </tr>
         }
@@ -76,11 +80,12 @@
 
     private async Task ChargerAlertesAsync()
     {
-        Alertes = (await AlerteApi.GetDashboardAsync()).Where(a => a.Statut == StatutAlerte.Active).ToList();
+        var allAlertes = await AlerteApi.GetDashboardAsync();
+        Alertes = allAlertes.Where(a => a.Statut == StatutAlerte.Active).ToList();
         Statistiques = (
-            Active: Alertes.Count(a => a.Statut == StatutAlerte.Active),
-            Acquittee: Alertes.Count(a => a.Statut == StatutAlerte.Acquittee),
-            Resolue: Alertes.Count(a => a.Statut == StatutAlerte.Resolue)
+            Active: allAlertes.Count(a => a.Statut == StatutAlerte.Active),
+            Acquittee: allAlertes.Count(a => a.Statut == StatutAlerte.Acquittee),
+            Resolue: allAlertes.Count(a => a.Statut == StatutAlerte.Resolue && a.DateCreation.Date == DateTime.Today)
         );
         DerniereMaj = DateTime.Now;
         StateHasChanged();
@@ -88,18 +93,93 @@
 
     private async Task Acquitter(Guid id)
     {
-        await AlerteApi.AcquitterAsync(id);
-        await ChargerAlertesAsync();
+        try
+        {
+            await AlerteApi.AcquitterAsync(id);
+            await ChargerAlertesAsync();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"Erreur HTTP lors de l'acquittement: {httpEx.Message}");
+            if (httpEx.StatusCode.HasValue)
+                Console.WriteLine($"Code HTTP: {httpEx.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de l'acquittement: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
     }
 
     private async Task Resoudre(Guid id)
     {
-        await AlerteApi.ResoudreAsync(id);
-        await ChargerAlertesAsync();
+        try
+        {
+            await AlerteApi.ResoudreAsync(id);
+            await ChargerAlertesAsync();
+        }
+        catch (HttpRequestException httpEx)
+        {
+            Console.WriteLine($"Erreur HTTP lors de la résolution: {httpEx.Message}");
+            if (httpEx.StatusCode.HasValue)
+                Console.WriteLine($"Code HTTP: {httpEx.StatusCode}");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors de la résolution: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
     }
+
+    private string GetBadge(StatutAlerte statut) => statut switch
+    {
+        StatutAlerte.Active => "bg-danger",
+        StatutAlerte.Acquittee => "bg-warning",
+        StatutAlerte.Resolue => "bg-success",
+        _ => "bg-secondary"
+    };
 
     private void NavigateToDetails(Guid alerteId)
     {
         Navigation.NavigateTo($"/alerte/details/{alerteId}");
+    }
+
+    private (string valeurMesuree, string seuil) ParseMessage(string? message)
+    {
+        if (string.IsNullOrEmpty(message))
+            return ("N/A", "N/A");
+
+        try
+        {
+            // Message format: "Seuil [Min/Max] dépassé : valeur mesurée [X] [unité], seuil configuré [Y] [unité]"
+            var parts = message.Split(' ');
+            if (parts.Length >= 10)
+            {
+                // Find "valeur" (index 4) and "mesurée" (index 5)
+                var valeurIndex = Array.IndexOf(parts, "valeur");
+                var mesureeIndex = Array.IndexOf(parts, "mesurée");
+                
+                if (valeurIndex >= 0 && mesureeIndex == valeurIndex + 1 && mesureeIndex + 1 < parts.Length)
+                {
+                    var valeurMesuree = parts[mesureeIndex + 1]; // Value after "mesurée"
+                    
+                    // Find "seuil" and "configuré" 
+                    var seuilIndex = Array.IndexOf(parts, "seuil");
+                    var configureIndex = Array.IndexOf(parts, "configuré");
+                    
+                    if (seuilIndex >= 0 && configureIndex == seuilIndex + 1 && configureIndex + 1 < parts.Length)
+                    {
+                        var seuil = parts[configureIndex + 1]; // Value after "configuré"
+                        return (valeurMesuree, seuil);
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // If parsing fails, return the original message as fallback
+        }
+
+        return ("N/A", "N/A");
     }
 }
