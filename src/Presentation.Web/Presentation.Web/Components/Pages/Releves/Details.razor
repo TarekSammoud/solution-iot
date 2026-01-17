@@ -1,0 +1,109 @@
+@page "/releves/{Id:guid}"
+@using Application.DTOs.Releve
+@using Application.DTOs.Sonde
+@using Application.DTOs.UniteMesure
+@using Presentation.Web.Services
+@inject ReleveApiService ApiService
+@inject SondeApiService SondeApiService
+@inject NavigationManager Navigation
+@inject UniteMesureApiService UniteMesure
+@rendermode InteractiveServer
+
+<PageTitle>Détails du Relevé</PageTitle>
+
+<h3>Détails du Relevé</h3>
+
+@if (Releve == null)
+{
+    <div class="d-flex justify-content-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Relevé #@Releve.Id.ToString().Substring(0, 8)</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>Informations Générales</h5>
+                    <dl class="row">
+                        <dt class="col-sm-4">ID:</dt>
+                        <dd class="col-sm-8">@Releve.Id</dd>
+                        
+                        <dt class="col-sm-4">Sonde:</dt>
+                        <dd class="col-sm-8">@(SondeInfo?.Nom ?? "Chargement...")</dd>
+                        
+                        <dt class="col-sm-4">Type:</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info">(Releve.TypeReleve)</span>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Valeur:</dt>
+                        <dd class="col-sm-8">
+                            <strong>@Releve.Valeur.ToString("F2") @(uniteMesure?.Symbole ?? "")</strong>
+                        </dd>
+                        
+                        <dt class="col-sm-4">Date/Heure:</dt>
+                        <dd class="col-sm-8">@Releve.DateHeure.ToString("dd/MM/yyyy HH:mm:ss")</dd>
+                    </dl>
+                </div>
+                
+            </div>
+        </div>
+        <div class="card-footer">
+            <div class="d-flex justify-content-between">
+                <a class="btn btn-secondary" href="/releves">
+                    <i class="bi bi-arrow-left"></i> Retour à la liste
+                </a>
+                <div class="btn-group">
+                    
+                    <a class="btn btn-danger" href="/releves/delete/@Releve.Id">
+                        <i class="bi bi-trash"></i> Supprimer
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Guid Id { get; set; }
+    
+    private ReleveDto? Releve { get; set; }
+    private SondeDto? SondeInfo { get; set; }
+    private UniteMesureDto uniteMesure { get; set; }
+    private string? ErrorMessage { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            Releve = await ApiService.GetByIdAsync(Id);
+            if (Releve != null)
+            {
+                SondeInfo = await SondeApiService.GetByIdAsync(Releve.SondeId);
+                if (SondeInfo != null)
+                {
+                    uniteMesure = await UniteMesure.GetByIdAsync(SondeInfo.UniteMesureId);
+                }
+            }
+            else
+            {
+                ErrorMessage = "Relevé non trouvé";
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorMessage = $"Erreur lors du chargement: {ex.Message}";
+        }
+    }
+
+  
+
+  
+}

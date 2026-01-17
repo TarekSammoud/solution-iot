@@ -1,4 +1,4 @@
-﻿@page "/sonde/details/{Id:guid}"
+@page "/sonde/details/{Id:guid}"
 @using Application.DTOs.Sonde
 @using Application.DTOs.Localisation
 @using Application.DTOs.UniteMesure
@@ -8,6 +8,7 @@
 @inject LocalisationApiService LocalisationService
 @inject UniteMesureApiService UniteMesureService
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <h3>Détails Sonde</h3>
 

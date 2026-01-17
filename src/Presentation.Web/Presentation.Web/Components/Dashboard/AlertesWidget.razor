@@ -1,0 +1,78 @@
+@using Application.DTOs.Alertes
+@using Domain.Enums
+
+<div class="card h-100">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">🚨 Alertes Actives</h5>
+    </div>
+    <div class="card-body">
+        @if (Alertes == null || !Alertes.Any())
+        {
+            <p class="text-muted">Aucune alerte active</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var alerte in Alertes)
+                {
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start"
+                         @onclick="() => NavigateToAlerte(alerte.Id)" 
+                         style="cursor: pointer;">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">Sonde: @GetSondeName(alerte.SondeId)</div>
+                            <small class="text-muted">
+                                @GetAlerteDescription(alerte)
+                                <br />
+                                <em>il y a @GetTimeAgo(alerte.DateCreation)</em>
+                            </small>
+                        </div>
+                        <span class="badge bg-danger rounded-pill">@alerte.TypeSeuil</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<AlerteDto>? Alertes { get; set; }
+    [Parameter] public EventCallback<Guid> OnAlerteClick { get; set; }
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private void NavigateToAlerte(Guid alerteId)
+    {
+        Navigation.NavigateTo($"/alerte/details/{alerteId}");
+    }
+
+    private string GetSondeName(Guid sondeId)
+    {
+        // In a real implementation, you might want to fetch sonde names
+        // For now, we'll use the ID
+        return $"Sonde {sondeId.ToString().Substring(0, 8)}...";
+    }
+
+    private string GetAlerteDescription(AlerteDto alerte)
+    {
+        return alerte.TypeSeuil switch
+        {
+            TypeSeuil.Minimum => $"Min dépassé: {alerte.Message}",
+            TypeSeuil.Maximum => $"Max dépassé: {alerte.Message}",
+            _ => alerte.Message ?? "Seuil dépassé"
+        };
+    }
+
+    private string GetTimeAgo(DateTime date)
+    {
+        var timeSpan = DateTime.Now - date;
+        
+        if (timeSpan.TotalMinutes < 1)
+            return "à l'instant";
+        if (timeSpan.TotalHours < 1)
+            return $"il y a {(int)timeSpan.TotalMinutes} minute{(timeSpan.TotalMinutes >= 2 ? "s" : "")}";
+        if (timeSpan.TotalDays < 1)
+            return $"il y a {(int)timeSpan.TotalHours} heure{(timeSpan.TotalHours >= 2 ? "s" : "")}";
+        
+        return $"il y a {(int)timeSpan.TotalDays} jour{(timeSpan.TotalDays >= 2 ? "s" : "")}";
+    }
+}

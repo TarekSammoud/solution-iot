@@ -1,0 +1,115 @@
+@page "/Dashboard"
+@inject Presentation.Web.Services.DashboardApiService DashboardApi
+@inject NavigationManager Navigation
+@using Application.DTOs.Dashboard
+@using Application.DTOs.Alertes
+@using Application.DTOs.Releve
+@using Application.DTOs.Actionneur
+@implements IDisposable
+@rendermode InteractiveServer
+
+<h3>Dashboard IoT</h3>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="text-muted">
+        Dernière mise à jour : @_lastUpdate.ToString("HH:mm:ss")
+        @if (_countdownSeconds > 0)
+        {
+            <span class="ms-2">- Prochain rafraîchissement dans @_countdownSeconds secondes</span>
+        }
+    </div>
+    <button class="btn btn-primary" @onclick="OnInitializedAsync">
+        <i class="bi bi-arrow-clockwise"></i> Rafraîchir maintenant
+    </button>
+</div>
+
+@if (_isLoading || _summary == null)
+{
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Chargement...</span>
+        </div>
+    </div>
+}
+else
+{
+    <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <Presentation.Web.Components.Dashboard.StatistiquesWidget Statistiques="_summary.Statistiques" />
+            </div>
+            <div class="col-12 col-md-6">
+                <Presentation.Web.Components.Dashboard.AlertesWidget Alertes="_summary.AlertesActives" />
+            </div>
+            <div class="col-12 col-md-6">
+                <Presentation.Web.Components.Dashboard.RelevesWidget Releves="_summary.DerniersReleves" />
+            </div>
+            <div class="col-12 col-md-6">
+                <Presentation.Web.Components.Dashboard.ActionneursWidget Actionneurs="_summary.ActionneursActifs" />
+            </div>
+        </div>
+}
+
+@code {
+    private DashboardSummaryDto? _summary;
+    private DateTime _lastUpdate;
+    private System.Threading.Timer? _timer;
+    private System.Threading.Timer? _countdownTimer;
+    private int _countdownSeconds = 30;
+    private bool _isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Show spinner for 1 second before loading data
+        _isLoading = true;
+        await LoadData();
+        _timer = new Timer(async _ => await RefreshData(), null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        StartCountdownTimer();
+        @* add Delay *@
+        await Task.Delay(1000);
+        _isLoading = false;
+    }
+
+    private void StartCountdownTimer()
+    {
+        _countdownSeconds = 30;
+        _countdownTimer?.Dispose();
+        _countdownTimer = new Timer(_ =>
+        {
+            _countdownSeconds--;
+            if (_countdownSeconds <= 0)
+            {
+                _countdownSeconds = 30;
+            }
+            InvokeAsync(StateHasChanged);
+        }, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+    }
+
+    private async Task LoadData()
+    {
+        try
+        {
+            _summary = await DashboardApi.GetSummaryAsync();
+            _lastUpdate = DateTime.Now;
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erreur lors du chargement des données du dashboard : {ex.Message}");
+            _isLoading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task RefreshData()
+    {
+        await LoadData();
+        StartCountdownTimer();
+    }
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+        _countdownTimer?.Dispose();
+    }
+}

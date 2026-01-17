@@ -1,0 +1,46 @@
+@using Application.DTOs.Dashboard
+
+<div class="card h-100">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">📊 Statistiques</h5>
+    </div>
+    <div class="card-body">
+        @if (Statistiques == null)
+        {
+            <p class="text-muted">Chargement des statistiques...</p>
+        }
+        else
+        {
+            <div class="row g-3">
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                        <span class="fw-bold">Sondes</span>
+                        <span class="badge bg-success">@Statistiques.SondesActives ⚡ @Statistiques.SondesInactives</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                        <span class="fw-bold">Actionneurs</span>
+                        <span class="badge bg-info">@Statistiques.ActionneursActifs</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                        <span class="fw-bold">Alertes</span>
+                        <span class="badge bg-danger">@Statistiques.AlertesActives actives</span>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between align-items-center p-2 bg-light rounded">
+                        <span class="fw-bold">Relevés</span>
+                        <span class="badge bg-secondary">@Statistiques.RelevesAujourdHui aujourd'hui</span>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public StatistiquesDto? Statistiques { get; set; }
+}

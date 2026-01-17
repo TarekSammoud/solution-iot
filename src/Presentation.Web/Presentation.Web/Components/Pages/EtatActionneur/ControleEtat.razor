@@ -1,8 +1,9 @@
-﻿@page "/actionneur/{Id:guid}/controle"
+@page "/actionneur/{Id:guid}/controle"
 @using Application.DTOs.Actionneur
 @inject Presentation.Web.Services.EtatActionneurApiService EtatService
 @inject Presentation.Web.Services.ActionneurApiService ActionneurService
 @inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <h3>Contrôle Actionneur</h3>
 

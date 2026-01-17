@@ -1,10 +1,11 @@
-﻿@page "/seuilalerte/create/{SondeId:guid}/{TypeSeuil:int}"
+@page "/seuilalerte/create/{SondeId:guid}/{TypeSeuil:int}"
 @inject Presentation.Web.Services.SeuilAlerteApiService ApiService
 @inject NavigationManager Navigation
 @inject SondeApiService SondeApiService
 @using Application.DTOs.SeuilAlerte
 @using Domain.Enums
 @using System.Text.Json
+@rendermode InteractiveServer
 
 
 <h3>Créer un seuil - @typeLabel pour la sonde @SondeNom</h3>

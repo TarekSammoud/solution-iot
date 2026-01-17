@@ -1,0 +1,81 @@
+@using Application.DTOs.Releve
+@using Domain.Enums
+
+<div class="card h-100">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">📈 Derniers Relevés</h5>
+    </div>
+    <div class="card-body">
+        @if (Releves == null || !Releves.Any())
+        {
+            <p class="text-muted">Aucun relevé disponible</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var releve in Releves)
+                {
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-start"
+                         @onclick="() => NavigateToReleve(releve)" 
+                         style="cursor: pointer;">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">@GetSondeName(releve.SondeId)</div>
+                            <small class="text-muted">
+                                @GetReleveValue(releve)
+                                <br />
+                                <em>il y a @GetTimeAgo(releve.DateHeure)</em>
+                            </small>
+                        </div>
+                        <span class="badge bg-primary rounded-pill">@GetTypeReleveBadge(releve.TypeReleve)</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ReleveDto>? Releves { get; set; }
+    [Parameter] public EventCallback<ReleveDto> OnReleveClick { get; set; }
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private void NavigateToReleve(ReleveDto releve)
+    {
+        Navigation.NavigateTo($"/releves/{releve.Id}");
+    }
+
+    private string GetSondeName(Guid sondeId)
+    {
+        return $"Sonde {sondeId.ToString().Substring(0, 8)}...";
+    }
+
+    private string GetReleveValue(ReleveDto releve)
+    {
+        return $"{releve.Valeur} {releve.Sonde?.UniteMesureSymbole ?? ""}";
+    }
+
+    private string GetTypeReleveBadge(TypeReleve type)
+    {
+        return type switch
+        {
+            TypeReleve.Manuel => "Manuel",
+            TypeReleve.Automatique => "Auto",
+            _ => "Inconnu"
+        };
+    }
+
+    private string GetTimeAgo(DateTime date)
+    {
+        var timeSpan = DateTime.Now - date;
+
+        if (timeSpan.TotalMinutes < 1)
+            return "à l'instant";
+        if (timeSpan.TotalHours < 1)
+            return $"il y a {(int)timeSpan.TotalMinutes} minute{(timeSpan.TotalMinutes >= 2 ? "s" : "")}";
+        if (timeSpan.TotalDays < 1)
+            return $"il y a {(int)timeSpan.TotalHours} heure{(timeSpan.TotalHours >= 2 ? "s" : "")}";
+
+        return $"il y a {(int)timeSpan.TotalDays} jour{(timeSpan.TotalDays >= 2 ? "s" : "")}";
+    }
+}

@@ -35,6 +35,7 @@ public static class DependencyInjection
         services.AddScoped<IAlerteService, AlerteService>();
         services.AddScoped<IActionneurService, ActionneurService>();
         services.AddScoped<IEtatActionneurService, EtatActionneurService>();
+        services.AddScoped<IDashboardService, DashboardService>();
 
         return services;
     }

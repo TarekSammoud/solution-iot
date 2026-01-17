@@ -1,0 +1,81 @@
+@using Application.DTOs.Actionneur
+@using Domain.Enums
+
+<div class="card h-100">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">💡 Actionneurs Actifs</h5>
+    </div>
+    <div class="card-body">
+        @if (Actionneurs == null || !Actionneurs.Any())
+        {
+            <p class="text-muted">Aucun actionneur actif</p>
+        }
+        else
+        {
+            <div class="list-group list-group-flush">
+                @foreach (var actionneur in Actionneurs)
+                {
+                    <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                         @onclick="() => NavigateToActionneur(actionneur)" 
+                         style="cursor: pointer;">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">@GetActionneurIcon(actionneur.TypeActionneur) @actionneur.Nom</div>
+                            <small class="text-muted">@GetTypeActionneurLabel(actionneur.TypeActionneur)</small>
+                        </div>
+                        <div class="text-end">
+
+                            <span class="badge @(actionneur.EtatActuel.EstActif ? "bg-success" : "bg-secondary")">
+                                    @(actionneur.EtatActuel.EstActif ? "ON" : "OFF") 
+                            </span>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public List<ActionneurDto>? Actionneurs { get; set; }
+    [Parameter] public Dictionary<Guid, decimal>? EtatsActionneurs { get; set; }
+    [Parameter] public EventCallback<ActionneurDto> OnActionneurClick { get; set; }
+
+    [Inject] private NavigationManager Navigation { get; set; } = default!;
+
+    private void NavigateToActionneur(ActionneurDto actionneur)
+    {
+        Navigation.NavigateTo($"/actionneur/{actionneur.Id}/details");
+    }
+
+    private string GetActionneurIcon(TypeActionneur type)
+    {
+        return type switch
+        {
+            TypeActionneur.AmpouleSimple => "💡",
+            TypeActionneur.Moteur => "⚙️",
+            TypeActionneur.AmpouleVariometre => "🔧",
+            _ => "🔌"
+        };
+    }
+
+    private string GetTypeActionneurLabel(TypeActionneur type)
+    {
+        return type switch
+        {
+            TypeActionneur.AmpouleSimple => "Ampoule",
+            TypeActionneur.Moteur => "Moteur",
+            TypeActionneur.AmpouleVariometre => "Ampoule Variomètre",
+            _ => "Actionneur"
+        };
+    }
+
+    private bool GetEtatActionneur(Guid actionneurId)
+    {
+        return EtatsActionneurs?.ContainsKey(actionneurId) == true && EtatsActionneurs[actionneurId] > 0;
+    }
+
+    private int GetPourcentageActionneur(Guid actionneurId)
+    {
+        return EtatsActionneurs?.ContainsKey(actionneurId) == true ? (int)EtatsActionneurs[actionneurId] : 0;
+    }
+}

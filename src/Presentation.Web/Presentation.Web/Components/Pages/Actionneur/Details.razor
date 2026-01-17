@@ -3,7 +3,7 @@
 @using Application.DTOs.Localisation
 @inject Presentation.Web.Services.ActionneurApiService ActionneurService
 @inject Presentation.Web.Services.LocalisationApiService LocalisationService
-@inject NavigationManager Navigation
+@rendermode InteractiveServer
 
 <h3>Détails Actionneur</h3>
 
@@ -17,10 +17,10 @@
         <p><strong>État actuel:</strong> @FormatEtat(Actionneur)</p>
         <p><strong>Dernière modification:</strong> @Actionneur.EtatActuel?.DerniereModification</p>
 
-        <button class="btn btn-warning" @onclick="EditActionneur">Modifier</button>
-        <button class="btn btn-info" @onclick="ControleEtat">Contrôler l'état</button>
-        <button class="btn btn-danger" @onclick="DeleteActionneur">Supprimer</button>
-        <button class="btn btn-secondary" @onclick="GoBack">Retour</button>
+        <a class="btn btn-warning" href="/actionneur/@Id/edit">Modifier</a>
+        <a class="btn btn-info" href="/actionneur/@Id/controle">Contrôler l'état</a>
+        <a class="btn btn-danger" href="/actionneur/@Id/delete">Supprimer</a>
+        <a class="btn btn-secondary" href="/actionneurs">Retour</a>
 
     </div>
 }
@@ -38,27 +38,6 @@ else
     {
         Actionneur = await ActionneurService.GetByIdAsync(Id);
         Localisations = (await LocalisationService.GetAllAsync()).ToList();
-    }
-
-
-    private void EditActionneur()
-    {
-        Navigation.NavigateTo($"/actionneur/{Id}/edit");
-    }
-
-    private void ControleEtat()
-    {
-        Navigation.NavigateTo($"/actionneur/{Id}/controle");
-    }
-
-    private void DeleteActionneur()
-    {
-        Navigation.NavigateTo($"/actionneur/{Id}/delete");
-    }
-
-    private void GoBack()
-    {
-        Navigation.NavigateTo("/actionneurs");
     }
 
     private string FormatEtat(ActionneurDto a)
