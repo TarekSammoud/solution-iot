@@ -1,4 +1,6 @@
-﻿using Application.DTOs.Sonde;
+using Application.DTOs.Sonde;
+using Application.DTOs.Device;
+using Application.DTOs.Releve;
 using Domain.Enums;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -59,6 +61,41 @@ namespace Presentation.Web.Services
         {
             var response = await _http.DeleteAsync($"api/sonde/{id}");
             return response.IsSuccessStatusCode;
+        }
+
+        // Test communication
+        public async Task<TestCommunicationResultDto?> TestCommunicationAsync(Guid id)
+        {
+            var response = await _http.PostAsync($"api/sonde/{id}/test-communication", null);
+            if (response.IsSuccessStatusCode)
+            {
+                 return await response.Content.ReadFromJsonAsync<TestCommunicationResultDto>();
+            }
+            return null;
+        }
+
+        // Force Pull
+        public async Task<ReleveDto?> ForcePullAsync(Guid id)
+        {
+            var response = await _http.PostAsync($"api/sonde/{id}/force-pull", null);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ReleveDto>();
+            }
+            return null;
+        }
+
+        // Simulate Push
+        public async Task<ReleveDto?> SimulatePushAsync(Guid id, DeviceDataDto data)
+        {
+            var response = await _http.PostAsJsonAsync($"api/webhook/device/{id}", data);
+            if (response.IsSuccessStatusCode)
+            {
+                return await response.Content.ReadFromJsonAsync<ReleveDto>();
+            }
+            
+            var error = await response.Content.ReadAsStringAsync();
+            throw new Exception(string.IsNullOrWhiteSpace(error) ? response.ReasonPhrase : error);
         }
     }
 }

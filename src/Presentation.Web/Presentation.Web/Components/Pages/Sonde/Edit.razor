@@ -68,7 +68,7 @@ else
 
         <fieldset class="mb-3">
             <legend>Communication</legend>
-            <InputSelect class="form-select mb-2" @bind-Value="sonde.CanalCommunication" @onchange="OnCanalChanged">
+            <InputSelect class="form-select mb-2" Value="sonde.CanalCommunication" ValueExpression="() => sonde.CanalCommunication" ValueChanged="(CanalCommunication c) => OnCanalChanged(c)">
                 @foreach (var canal in Enum.GetValues<CanalCommunication>())
                 {
                     <option value="@canal">@canal</option>
@@ -149,12 +149,13 @@ else
             sonde.UniteMesureId = Guid.Empty;
     }
 
-    private void OnCanalChanged(ChangeEventArgs e)
+    private void OnCanalChanged(CanalCommunication newCanal)
     {
         if (sonde == null) return;
 
-        sonde.CanalCommunication = Enum.Parse<CanalCommunication>(e.Value?.ToString() ?? "HttpPush");
-        isUrlDisabled = sonde.CanalCommunication == CanalCommunication.HttpPush;
+        sonde.CanalCommunication = newCanal;
+        isUrlDisabled = sonde.CanalCommunication != CanalCommunication.HttpPull;
+        
         if (isUrlDisabled) sonde.UrlDevice = string.Empty;
     }
 
@@ -184,7 +185,7 @@ else
         try
         {
             await ApiService.UpdateAsync(sonde);
-            Navigation.NavigateTo("/sonde");
+            Navigation.NavigateTo($"/sonde/{sonde.Id}/details");
         }
         catch (Exception ex)
         {

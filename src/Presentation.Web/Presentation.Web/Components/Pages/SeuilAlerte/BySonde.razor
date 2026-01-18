@@ -1,4 +1,4 @@
-﻿@page "/sonde/{SondeId:guid}/seuilalerte/"
+@page "/sonde/{SondeId:guid}/seuilalerte/"
 @rendermode InteractiveServer
 
 @inject Presentation.Web.Services.SeuilAlerteApiService ApiService
@@ -112,7 +112,7 @@ else
     </div>
 
     <NavLink class="btn btn-secondary"
-             href="@($"/sonde/details/{SondeId}")">
+             href="@($"/sonde/{SondeId}/details")">
         Retour à la sonde
     </NavLink>
 }

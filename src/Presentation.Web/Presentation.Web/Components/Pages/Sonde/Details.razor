@@ -1,4 +1,4 @@
-@page "/sonde/details/{Id:guid}"
+@page "/sonde/{Id:guid}/details"
 @using Application.DTOs.Sonde
 @using Application.DTOs.Localisation
 @using Application.DTOs.UniteMesure
@@ -42,6 +42,7 @@
     </dl>
     
     <a class="btn btn-primary" href="@($"/sonde/{sonde.Id}/seuilalerte")">>Seuils alerte</a>
+    <a class="btn btn-info me-2" href="@($"/device/{sonde.Id}/test-communication")">Tester la communication</a>
     <a class="btn btn-warning me-2" href="@($"/sonde/edit/{sonde.Id}")">Modifier</a>
     <a class="btn btn-danger me-2" href="@($"/sonde/delete/{sonde.Id}")">Supprimer</a>
     <a class="btn btn-secondary" href="/sonde">Retour à la liste</a>

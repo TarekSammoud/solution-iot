@@ -1,0 +1,253 @@
+@page "/device/{Id:guid}/test-communication"
+@using Application.DTOs.Sonde
+@using Application.DTOs.Device
+@using Domain.Enums
+@using Presentation.Web.Services
+@inject SondeApiService SondeService
+@inject NavigationManager Navigation
+@rendermode InteractiveServer
+
+@if (isNotFound)
+{
+    <div class="alert alert-danger">
+        <h4>Sonde non trouvée</h4>
+        <p>Impossible de trouver la sonde demandée.</p>
+        <a href="/sonde" class="btn btn-primary">Retour à la liste</a>
+    </div>
+}
+else if (sonde == null)
+{
+    <p><em>Chargement...</em></p>
+}
+else
+{
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h3>
+                @sonde.Nom
+                <small class="text-muted ms-2 fs-5">Test & Simulation</small>
+            </h3>
+            <a href="/sonde/@Id/details" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i> Retour aux détails
+            </a>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Test de Connexion (Ping)</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <strong>Type:</strong> @sonde.TypeSonde
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Canal:</strong> @sonde.CanalCommunication
+                    </div>
+                    <div class="col-md-4">
+                        <strong>URL:</strong> <span class="text-break">@sonde.UrlDevice</span>
+                    </div>
+                </div>
+
+               
+
+                @if (result != null)
+                {
+                    <div class="mt-3 alert @(result.Success ? "alert-success" : "alert-danger")">
+                        <h6 class="alert-heading">@(result.Success ? "✅ Connexion réussie" : "❌ Échec de connexion")</h6>
+                        @if (result.Success)
+                        {
+                            <div class="small">
+                                <div>Valeur brute: <strong>@result.Value @sonde.UniteMesureSymbole</strong></div>
+                                <div>Timestamp: @result.Timestamp</div>
+                                <div>Latence: @result.Duration.TotalMilliseconds ms</div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div>@result.Message</div>
+                            <div class="small text-muted mt-1">Durée: @result.Duration.TotalMilliseconds ms</div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-light">
+                <h5 class="mb-0">Test Fonctionnel (Création de données)</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Cette section permet de simuler le fonctionnement réel du device et de <strong>créer des relevés</strong> dans la base de données.
+                </p>
+
+                @if (sonde.CanalCommunication == CanalCommunication.HttpPull)
+                {
+                    <div class="p-3 border rounded bg-light-subtle">
+                        <h6 class="mb-3">Test de Récupération (Pull)</h6>
+                        <p class="small text-muted">Déclenche manuellement la récupération des données depuis le device (identique au service d'arrière-plan).</p>
+                        <button class="btn btn-warning" @onclick="ForcePullAsync" disabled="@isSimulationLoading">
+                            @if (isSimulationLoading)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Forcer la récupération
+                        </button>
+                    </div>
+                }
+                else
+                {
+                    <div class="p-3 border rounded bg-light-subtle">
+                        <h6 class="mb-3">Simulation d'Envoi (Push)</h6>
+                        <p class="small text-muted">Simule l'envoi d'une donnée par le device vers le Webhook API.</p>
+                        
+                        <div class="input-group" style="max-width: 300px;">
+                            <span class="input-group-text">Valeur</span>
+                            <input type="number" class="form-control" @bind="pushValue" step="0.1" />
+                            <span class="input-group-text">@sonde.UniteMesureSymbole</span>
+                            <button class="btn btn-success" @onclick="SimulatePushAsync" disabled="@isSimulationLoading">
+                                @if (isSimulationLoading)
+                                {
+                                    <span class="spinner-border spinner-border-sm"></span>
+                                }
+                                else
+                                {
+                                    <span>Envoyer</span>
+                                }
+                            </button>
+                        </div>
+                    </div>
+                }
+
+                @if (!string.IsNullOrEmpty(simulationMessage))
+                {
+                    <div class="mt-3 alert @(isSimulationSuccess ? "alert-success" : "alert-danger")">
+                        @simulationMessage
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+
+    private SondeDto? sonde;
+    private TestCommunicationResultDto? result;
+    private bool isLoading = false;
+    private bool isNotFound = false;
+
+    // Simulation state
+    private bool isSimulationLoading = false;
+    private string? simulationMessage;
+    private bool isSimulationSuccess = false;
+    private decimal pushValue = 20.0m;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            sonde = await SondeService.GetByIdAsync(Id);
+            if (sonde == null)
+            {
+                isNotFound = true;
+            }
+        }
+        catch
+        {
+            isNotFound = true;
+        }
+    }
+
+    private async Task TestCommunicationAsync()
+    {
+        isLoading = true;
+        result = null;
+        try
+        {
+            result = await SondeService.TestCommunicationAsync(Id);
+            if (result == null)
+            {
+                 result = new TestCommunicationResultDto
+                {
+                    Success = false,
+                    Message = "Erreur de connexion au serveur"
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            result = new TestCommunicationResultDto
+            {
+                Success = false,
+                Message = ex.Message
+            };
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task ForcePullAsync()
+    {
+        isSimulationLoading = true;
+        simulationMessage = null;
+        try
+        {
+            var releve = await SondeService.ForcePullAsync(Id);
+            if (releve != null)
+            {
+                isSimulationSuccess = true;
+                simulationMessage = $"✅ Relevé créé avec succès ! Valeur: {releve.Valeur} {sonde?.UniteMesureSymbole}, Date: {releve.DateHeure}";
+            }
+            else
+            {
+                isSimulationSuccess = false;
+                simulationMessage = "❌ Échec de la récupération (vérifiez les logs ou l'URL).";
+            }
+        }
+        catch (Exception ex)
+        {
+            isSimulationSuccess = false;
+            simulationMessage = $"❌ Erreur: {ex.Message}";
+        }
+        finally
+        {
+            isSimulationLoading = false;
+        }
+    }
+
+    private async Task SimulatePushAsync()
+    {
+        isSimulationLoading = true;
+        simulationMessage = null;
+        try
+        {
+            var data = new DeviceDataDto { Value = pushValue, Timestamp = DateTime.UtcNow };
+            var releve = await SondeService.SimulatePushAsync(Id, data);
+            if (releve != null)
+            {
+                isSimulationSuccess = true;
+                simulationMessage = $"✅ Relevé créé via Webhook ! Valeur: {releve.Valeur} {sonde?.UniteMesureSymbole}";
+            }
+            else
+            {
+                isSimulationSuccess = false;
+                simulationMessage = "❌ Échec de l'envoi.";
+            }
+        }
+        catch (Exception ex)
+        {
+            isSimulationSuccess = false;
+            simulationMessage = $"❌ Erreur: {ex.Message}";
+        }
+        finally
+        {
+            isSimulationLoading = false;
+        }
+    }
+}

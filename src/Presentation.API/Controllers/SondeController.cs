@@ -1,4 +1,4 @@
-﻿using Application.DTOs.Sonde;
+using Application.DTOs.Sonde;
 using Application.Services.Interfaces;
 using Domain.Enums;
 using Microsoft.AspNetCore.Mvc;
@@ -13,10 +13,12 @@ namespace IotPlatform.Api.Controllers
     public class SondeController : ControllerBase
     {
         private readonly ISondeService _sondeService;
+        private readonly IDeviceCommunicationService _deviceCommunicationService;
 
-        public SondeController(ISondeService sondeService)
+        public SondeController(ISondeService sondeService, IDeviceCommunicationService deviceCommunicationService)
         {
             _sondeService = sondeService;
+            _deviceCommunicationService = deviceCommunicationService;
         }
 
         // GET: api/sonde
@@ -92,6 +94,28 @@ namespace IotPlatform.Api.Controllers
             var deleted = await _sondeService.DeleteAsync(id);
             if (!deleted) return NotFound();
             return NoContent();
+        }
+
+        [HttpPost("{id:guid}/test-communication")]
+        public async Task<IActionResult> TestCommunication(Guid id)
+        {
+            var sonde = await _sondeService.GetByIdAsync(id);
+            if (sonde == null) return NotFound();
+
+            var result = await _deviceCommunicationService.TestConnection(sonde);
+            return Ok(result);
+        }
+
+        [HttpPost("{id:guid}/force-pull")]
+        public async Task<IActionResult> ForcePull(Guid id)
+        {
+            var sonde = await _sondeService.GetByIdAsync(id);
+            if (sonde == null) return NotFound();
+
+            var result = await _deviceCommunicationService.PullDataFromDevice(sonde);
+            if (result == null) return BadRequest("Échec de la récupération ou device inactif/non-HttpPull");
+
+            return Ok(result);
         }
     }
 }

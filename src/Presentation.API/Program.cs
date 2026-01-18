@@ -1,4 +1,5 @@
 using Application;
+using Application.Services.BackgroundServices;
 using Domain.Interfaces;
 using Infrastructure.Data;
 using Infrastructure.Repositories;
@@ -27,6 +28,9 @@ builder.Services.AddScoped<IReleveRepository, ReleveRepository>();
 
 // Enregistrement des services (Application)
 builder.Services.AddApplicationServices();
+
+// Services d'arrière-plan
+builder.Services.AddHostedService<HttpPullBackgroundService>();
 
 // Configuration de HttpClient pour les appels externes
 builder.Services.AddHttpClient();
